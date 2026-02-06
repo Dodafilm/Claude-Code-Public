@@ -1,0 +1,186 @@
+id,name,category,lat,lng,notes
+n1,North Loop / Hyde Park,neighborhood,30.318,-97.724,Great walkable area with vintage shops & cafes
+n2,Zilker,neighborhood,30.267,-97.773,"Parks, Barton Springs, trails"
+n3,East Riverside,neighborhood,30.242,-97.727,"Affordable eats, food trucks"
+n4,Oltorf,neighborhood,30.243,-97.758,
+n5,Burnet Road / Allandale,neighborhood,30.335,-97.739,
+n6,Asian Shopping Center,neighborhood,30.387,-97.693,Chinatown Center area on N Lamar
+n7,West Campus,neighborhood,30.284,-97.747,UT area
+n8,Mueller,neighborhood,30.298,-97.705,
+n9,East 7th / Cesar Chavez,neighborhood,30.263,-97.725,
+n10,East 12th / Rosewood,neighborhood,30.275,-97.718,
+n11,Manor / Cherrywood,neighborhood,30.286,-97.714,
+n12,Bouldin Creek,neighborhood,30.248,-97.757,
+n13,South Congress,neighborhood,30.248,-97.748,"Shopping, food, iconic Austin vibe"
+n14,South Lamar,neighborhood,30.248,-97.775,
+n15,North Lamar,neighborhood,30.325,-97.730,
+n16,Clarksville,neighborhood,30.280,-97.757,
+n17,The Domain,neighborhood,30.402,-97.725,Shopping & dining complex
+n18,South Austin,neighborhood,30.220,-97.770,
+n19,Warehouse District,neighborhood,30.266,-97.746,
+n20,Red River,neighborhood,30.268,-97.737,Live music district
+n21,Rainey Street,neighborhood,30.258,-97.740,Bar-hopping strip
+n22,Congress Ave,neighborhood,30.267,-97.743,Downtown corridor
+c1,Flat Track Coffee,coffee,30.263,-97.720,East side — horchata + a shot
+c2,Cherrywood Coffeehouse,coffee,30.288,-97.714,"East side, lots of indoor seating"
+c3,Noble Joes,coffee,30.241,-97.732,"Food truck, riverside + south"
+c4,Strange Love Coffee,coffee,30.265,-97.720,East side
+c5,Double Trouble,coffee,30.266,-97.722,"Coffee + food, nearby thrifting"
+c6,Merit Coffee,coffee,30.250,-97.775,S Lamar
+c7,Opa Coffee,coffee,30.248,-97.776,"Coffee + Greek food, S Lamar"
+c8,Mozart's Coffee,coffee,30.290,-97.785,"Sit on the water, annual Christmas show"
+c9,Ghoul Coffee,coffee,30.270,-97.720,"Food truck, east side"
+c10,El Tigre Coffee,coffee,30.268,-97.718,"Food truck, east side"
+c11,Civil Goat Coffee,coffee,30.310,-97.723,
+f1,Kome,food,30.300,-97.712,$ — Homestyle Japanese (Goldie's fav)
+f2,Brunch Brunch Baby,food,30.242,-97.728,"$ — Food truck, Riverside"
+f3,Kemuri Tatsu-Ya,food,30.267,-97.720,$$ — Japanese izakaya
+f4,Patrizi's,food,30.284,-97.718,$ — Fresh made pasta
+f5,De Nada,food,30.267,-97.722,$ — Mexican + margs
+f6,Uchi,food,30.253,-97.773,$$ — Expensive and delicious sushi
+f7,Loro,food,30.249,-97.774,$ — Japanese BBQ fusion
+f8,OG Chuy's (near Barton),food,30.260,-97.768,"$ — Tex mex, get the creamy jalapeno sauce"
+f9,Homeslice Pizza,food,30.248,-97.750,$ — Pizza on S Congress
+f10,Ramen Tatsu-Ya,food,30.249,-97.777,$ — Amazing ramen
+f11,Tiki Tatsu-Ya,food,30.263,-97.721,"$ — Immersive tiki drink bar, sister to Ramen Tatsu-Ya"
+f12,Bambino's Pizza,food,30.265,-97.719,"$ — Pizza, east side"
+f13,Juiceland,food,30.268,-97.735,$ — Smoothies!
+f14,Foreign & Domestic,food,30.310,-97.726,"$$ — Oysters on Tuesdays, great menu"
+f15,Clark's Oyster Bar,food,30.268,-97.750,$$ — Oysters
+f16,Jew Boy Sliders,food,30.264,-97.724,$ — BEST burger/sliders
+f17,Granny's Tacos,food,30.263,-97.717,"$ — Food truck, east side"
+f18,Las Trancas,food,30.266,-97.716,"$ — Food truck, east side"
+f19,Nervous Charlie's Bagels,food,30.325,-97.730,$ — N Lamar
+f20,Rockstar Bagels,food,30.265,-97.695,$ — Far east side
+b1,Mama Dearest,drinks,30.264,-97.723,"Bar, east side"
+b2,Frazier's,drinks,30.243,-97.730,"Divey bar, Riverside"
+b3,Busty's,drinks,30.265,-97.722,Food + bar — great sandwiches + ambience
+b4,Whisler's,drinks,30.264,-97.722,Bar on east 6th — tiny bar up the iron stairs outside
+b5,Side Bar,drinks,30.267,-97.737,"Cheap drinks, divey"
+b6,Barbs / Swan Dive,drinks,30.268,-97.736,Dance club
+b7,Dirty Bills,drinks,30.270,-97.753,West 6th — good when it's not a weekend
+b8,Workhorse,drinks,30.267,-97.735,
+b9,Cavalier,drinks,30.270,-97.737,
+b10,Shangri-La,drinks,30.264,-97.721,East side
+b11,Techo,drinks,30.264,-97.724,
+b12,Tweety's,drinks,30.265,-97.720,
+b13,Kinda Tropical,drinks,30.265,-97.723,
+b14,Kitty Cohen's,drinks,30.265,-97.721,
+b15,Butterfly Bar,drinks,30.262,-97.722,
+b16,West China Tea House,drinks,30.270,-97.719,
+m1,Parish,music,30.268,-97.738,
+m2,Mohawk,music,30.268,-97.737,Live music + bar
+m3,Elysium,music,30.268,-97.735,
+m4,13th Floor,music,30.268,-97.734,
+m5,Cheer Up Charlie's,music,30.269,-97.738,
+m6,Valhalla,music,30.268,-97.736,
+m7,Empire Control Room,music,30.258,-97.740,
+m8,Stubb's BBQ,music,30.269,-97.736,
+m9,ACL Live at Moody Theater,music,30.261,-97.748,
+m10,Continental Club,music,30.249,-97.750,S Congress
+m11,Radio East,music,30.265,-97.718,
+m12,Hotel Vegas / Volstead Lounge,music,30.264,-97.720,
+m13,White Horse,music,30.264,-97.719,
+m14,The Ballroom,music,30.268,-97.736,
+m15,Radio South,music,30.248,-97.750,
+m16,Far Out Lounge,music,30.230,-97.745,
+m17,Sagebrush,music,30.248,-97.751,
+m18,Little Darlin's,music,30.230,-97.740,
+m19,Egos,music,30.267,-97.722,Also karaoke night
+m20,Moody Center,music,30.282,-97.731,"Major arena, UT area"
+m21,Moody Amphitheater,music,30.264,-97.749,Waterloo Park
+fe1,ACL Festival,festival,30.264,-97.775,Zilker Park — annual Oct music festival
+fe2,Levitation,festival,30.268,-97.737,Psych music festival
+fe3,Fantastic Fest,festival,30.249,-97.775,Film festival at Alamo Drafthouse
+fe4,Austin Psych Fest,festival,30.269,-97.737,
+fe5,Church of the Friendly Ghost,festival,30.270,-97.720,
+fe6,Austin Studio Tours,festival,30.267,-97.743,
+fe7,Moon Tower Comedy,festival,30.261,-97.748,Comedy festival
+fe8,Austin Film Festival,festival,30.267,-97.743,
+fe9,Putt-Putt Grand Open,festival,30.265,-97.730,
+fe10,Fusebox,festival,30.267,-97.743,Performing arts festival
+fe11,Ubiyu,festival,30.265,-97.722,DJ event
+fe12,Mightbemagic,festival,30.265,-97.723,DJ event
+fe13,Vibe Vessel,festival,30.265,-97.720,DJ event
+fe14,Floppy Disco,festival,30.268,-97.736,DJ event
+a1,Icosa (in Canopy),arts,30.265,-97.722,Gallery
+a2,Almost Real Things,arts,30.265,-97.720,Gallery + community org
+a3,Canopy,arts,30.265,-97.721,Arts complex
+a4,Museum of Human Achievement,arts,30.280,-97.695,
+a5,Highland Collective,arts,30.310,-97.706,
+a6,Bolm Studios,arts,30.265,-97.710,
+a7,Dadalab,arts,30.265,-97.719,Gallery + community org
+a8,Art Island,arts,30.265,-97.717,
+a9,McLennon Pen Co. Gallery,arts,30.320,-97.724,
+a10,Laguna Gloria,arts,30.313,-97.778,Sculpture park on the water
+a11,Riches Contemporary,arts,30.267,-97.720,
+a12,The Contemporary,arts,30.262,-97.740,
+a13,Martha's Contemporary,arts,30.267,-97.743,
+a14,Hyperreal,arts,30.265,-97.721,Film club — screens indie films east side
+a15,Flavored Channels,arts,30.265,-97.722,Community org
+a16,Arthub,arts,30.267,-97.720,Community org
+a17,Exploded Drawing,arts,30.265,-97.720,Records + community org
+s1,Rock n Roll Rentals,shopping,30.320,-97.725,Cheap rental + monthly synth of the month
+s2,Switched On,shopping,30.318,-97.724,Buy synths & gear
+s3,Guitar Center,shopping,30.350,-97.715,
+s4,End of an Ear,shopping,30.248,-97.750,"Record store, S Congress"
+s5,Breakaway Records,shopping,30.318,-97.724,North Loop
+s6,Antone's Records,shopping,30.268,-97.743,
+s7,Waterloo Records,shopping,30.285,-97.742,
+s8,Sunshine Records,shopping,30.265,-97.722,East side
+s9,Exploded Drawing Records,shopping,30.265,-97.720,East side
+s10,Drinks Records,shopping,30.265,-97.723,East side
+s11,BookPeople,shopping,30.277,-97.750,Indie bookstore on N Lamar
+s12,Lighthouse Books,shopping,30.265,-97.722,East side
+s13,Austin Books & Comics,shopping,30.318,-97.724,North Loop
+s14,Kinokuniya Bookstore,shopping,30.402,-97.725,The Domain area
+s15,Monkeywrench Books,shopping,30.270,-97.735,
+s16,Firstlight Books,shopping,30.265,-97.720,East side
+s17,Livra Books,shopping,30.265,-97.721,
+s18,Majestic Books,shopping,30.267,-97.740,
+s19,Half Price Books,shopping,30.325,-97.730,N Lamar location
+o1,Hike & Bike Trail (Town Lake),outdoors,30.262,-97.750,Walk around Town Lake
+o2,Barton Springs Pool,outdoors,30.264,-97.771,Free night swim!
+o3,Zilker Botanical Garden,outdoors,30.269,-97.773,Go early AM or in the fall
+o4,360 Overlook Hike,outdoors,30.315,-97.810,Near Capital of Texas Hwy
+o5,Town Lake Paddleboarding,outdoors,30.262,-97.745,
+o6,Secret Beach,outdoors,30.260,-97.698,
+o7,Mt. Bonnell,outdoors,30.321,-97.773,Iconic overlook
+o8,Spyglass Trail,outdoors,30.265,-97.784,
+o9,Sculpture Falls,outdoors,30.241,-97.811,
+o10,Commons Ford,outdoors,30.348,-97.830,Swimming & picnic
+o11,Redbud Isle,outdoors,30.300,-97.785,Dog-friendly
+o12,Disc Golf (Zilker),outdoors,30.270,-97.773,
+o13,Valente Beach,outdoors,30.258,-97.695,
+e1,Cidercade,entertainment,30.265,-97.718,Arcade + cider bar
+e2,Pinballz Arcade,entertainment,30.350,-97.710,
+e3,North Austin Roller Rink,entertainment,30.380,-97.710,Roller skating
+e4,Weird Wednesday / Terror Tuesday,entertainment,30.249,-97.775,At Alamo Drafthouse
+e5,Egos Karaoke Night,entertainment,30.267,-97.723,Weekly staple
+e6,DJ Sets at Wine Spot,entertainment,30.265,-97.722,"East side, weekly"
+e7,Pickleball Courts,entertainment,30.270,-97.730,"Huge culture here, lots of courts"
+e8,UT Football Game,entertainment,30.283,-97.732,DKR Stadium
+e9,Austin FC Soccer,entertainment,30.388,-97.720,Q2 Stadium
+e10,Tango School,entertainment,30.270,-97.730,
+e11,Texas State History Museum,entertainment,30.280,-97.739,
+h1,Austin Bouldering Project,fitness,30.260,-97.720,
+h2,Black Swan Yoga,fitness,30.267,-97.722,
+h3,Float Tanks,fitness,30.270,-97.730,
+h4,Town Lake Running Trail,fitness,30.262,-97.748,
+h5,Critical Mass Bike Ride,fitness,30.267,-97.743,Monthly group ride
+h6,Yellow Bike Project,fitness,30.268,-97.735,Self bike repair
+h7,India's Warehouse,fitness,30.265,-97.720,Aerial / ecstatic dance
+h8,People's Pharmacy,fitness,30.310,-97.724,Health talks
+d1,Enchanted Rock,daytrip,30.506,-98.820,"State park, amazing hike"
+d2,Krause Springs,daytrip,30.478,-98.153,Swimming hole
+d3,Blue Hole (Wimberley),daytrip,30.000,-98.090,Swimming
+d4,Jacob's Well,daytrip,30.034,-98.126,Natural spring
+d5,Lake Travis,daytrip,30.378,-97.922,Lake hangs
+d6,Pedernales Falls,daytrip,30.308,-98.258,State park
+d7,Marfa,daytrip,30.309,-104.021,Art town in West Texas
+d8,Schlitterbahn,daytrip,29.716,-98.129,"Water park, New Braunfels"
+d9,Float the Guadalupe,daytrip,29.860,-98.210,Tubing
+d10,Float in San Marcos,daytrip,29.874,-97.935,Tubing
+d11,German/Czech Food Towns,daytrip,29.710,-98.130,New Braunfels / Gruene area
+d12,Camping,daytrip,30.400,-98.000,Hill country
+d13,Horseback Riding,daytrip,30.350,-98.050,Hill country ranches

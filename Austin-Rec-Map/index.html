@@ -25,230 +25,135 @@
       background: #16213e;
       border-bottom: 2px solid #0f3460;
       z-index: 1000;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    header h1 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
-
+    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
     header h1 span { color: #e94560; }
 
-    .header-actions {
-      display: flex;
-      gap: 8px;
-    }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .btn {
-      padding: 6px 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: 600;
-      transition: opacity 0.2s;
+      padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer;
+      font-size: 0.85rem; font-weight: 600; transition: opacity 0.2s;
     }
     .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #0f3460; color: #eee; }
+    .btn-danger  { background: #e94560; color: #fff; }
 
-    .btn-export { background: #0f3460; color: #eee; }
-    .btn-import { background: #0f3460; color: #eee; }
-    .btn-clear  { background: #e94560; color: #fff; }
+    #map { flex: 1; z-index: 1; }
 
-    #map {
-      flex: 1;
-      z-index: 1;
-    }
-
-    /* Legend */
+    /* Legend / Filter Panel */
     .legend {
-      position: absolute;
-      bottom: 30px;
-      left: 12px;
-      background: rgba(22, 33, 62, 0.95);
-      border-radius: 10px;
-      padding: 12px 16px;
-      z-index: 1000;
-      border: 1px solid #0f3460;
-      max-width: 200px;
+      position: absolute; bottom: 30px; left: 12px;
+      background: rgba(22, 33, 62, 0.95); border-radius: 10px;
+      padding: 12px 16px; z-index: 1000; border: 1px solid #0f3460;
+      max-width: 220px; max-height: 70vh; overflow-y: auto;
     }
-
     .legend h3 {
-      font-size: 0.8rem;
-      margin-bottom: 8px;
-      color: #aaa;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      font-size: 0.75rem; margin-bottom: 8px; color: #aaa;
+      text-transform: uppercase; letter-spacing: 1px;
     }
-
     .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 5px;
-      font-size: 0.85rem;
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 5px; font-size: 0.82rem; cursor: pointer;
+      user-select: none; transition: opacity 0.2s;
     }
-
+    .legend-item.disabled { opacity: 0.35; }
     .legend-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      flex-shrink: 0;
+      width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
       border: 2px solid rgba(255,255,255,0.3);
     }
 
     /* Modal */
     .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 2000;
-      justify-content: center;
-      align-items: center;
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 2000; justify-content: center; align-items: center;
     }
     .modal-overlay.active { display: flex; }
 
     .modal {
-      background: #16213e;
-      border-radius: 14px;
-      padding: 28px;
-      width: 360px;
-      max-width: 90vw;
-      border: 1px solid #0f3460;
+      background: #16213e; border-radius: 14px; padding: 28px;
+      width: 380px; max-width: 90vw; border: 1px solid #0f3460;
+      max-height: 90vh; overflow-y: auto;
     }
-
-    .modal h2 {
-      margin-bottom: 18px;
-      font-size: 1.1rem;
-    }
+    .modal h2 { margin-bottom: 18px; font-size: 1.1rem; }
 
     .modal label {
-      display: block;
-      font-size: 0.8rem;
-      color: #aaa;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px;
+      text-transform: uppercase; letter-spacing: 0.5px;
     }
-
-    .modal input, .modal textarea, .modal select {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid #0f3460;
-      background: #1a1a2e;
-      color: #eee;
-      font-size: 0.95rem;
-      margin-bottom: 14px;
-      font-family: inherit;
+    .modal input, .modal textarea {
+      width: 100%; padding: 10px 12px; border-radius: 8px;
+      border: 1px solid #0f3460; background: #1a1a2e; color: #eee;
+      font-size: 0.95rem; margin-bottom: 14px; font-family: inherit;
     }
-
     .modal textarea { resize: vertical; min-height: 60px; }
 
     .category-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 14px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px; margin-bottom: 14px;
     }
-
     .category-btn {
-      padding: 10px 8px;
-      border-radius: 8px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      font-size: 0.82rem;
-      font-weight: 600;
-      text-align: center;
-      transition: all 0.15s;
-      color: #fff;
+      padding: 8px 4px; border-radius: 8px; border: 2px solid transparent;
+      cursor: pointer; font-size: 0.72rem; font-weight: 600;
+      text-align: center; transition: all 0.15s; color: #fff;
     }
     .category-btn:hover { filter: brightness(1.15); }
     .category-btn.selected { border-color: #fff; transform: scale(1.04); }
 
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 6px;
-    }
-
-    .modal-actions .btn {
-      flex: 1;
-      padding: 10px;
-      font-size: 0.95rem;
-    }
+    .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+    .modal-actions .btn { flex: 1; padding: 10px; font-size: 0.95rem; }
 
     .btn-save { background: #e94560; color: #fff; }
     .btn-cancel { background: #0f3460; color: #eee; }
     .btn-delete { background: #6b2131; color: #fff; }
 
-    /* Edit modal tweaks */
-    .modal-actions-edit {
-      display: flex;
-      gap: 10px;
-      margin-top: 6px;
-    }
-    .modal-actions-edit .btn { flex: 1; padding: 10px; font-size: 0.95rem; }
-
-    /* Tooltip on markers */
     .leaflet-tooltip {
-      background: #16213e;
-      color: #eee;
-      border: 1px solid #0f3460;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 0.85rem;
+      background: #16213e; color: #eee; border: 1px solid #0f3460;
+      border-radius: 6px; padding: 6px 12px; font-size: 0.85rem;
+      max-width: 260px; white-space: normal;
     }
     .leaflet-tooltip-top::before { border-top-color: #0f3460; }
 
-    /* Custom circle markers */
-    .custom-marker {
-      border-radius: 50%;
-      border: 3px solid rgba(255,255,255,0.5);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-      transition: transform 0.15s;
-    }
-    .custom-marker:hover { transform: scale(1.25); }
-
-    /* Instructions toast */
     .toast {
-      position: absolute;
-      top: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(22, 33, 62, 0.95);
-      border: 1px solid #0f3460;
-      border-radius: 10px;
-      padding: 10px 20px;
-      z-index: 1000;
-      font-size: 0.9rem;
-      color: #ccc;
-      pointer-events: none;
-      transition: opacity 0.5s;
+      position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+      background: rgba(22, 33, 62, 0.95); border: 1px solid #0f3460;
+      border-radius: 10px; padding: 10px 20px; z-index: 1000;
+      font-size: 0.9rem; color: #ccc; pointer-events: none; transition: opacity 0.5s;
     }
 
     #import-file { display: none; }
+
+    .search-box {
+      position: absolute; top: 62px; right: 12px; z-index: 1000;
+    }
+    .search-box input {
+      padding: 8px 14px; border-radius: 8px; border: 1px solid #0f3460;
+      background: rgba(22,33,62,0.95); color: #eee; font-size: 0.9rem;
+      width: 220px; font-family: inherit;
+    }
+    .search-box input::placeholder { color: #666; }
   </style>
 </head>
 <body>
   <header>
     <h1><span>Austin</span> Rec Map</h1>
     <div class="header-actions">
-      <button class="btn btn-import" onclick="document.getElementById('import-file').click()">Import</button>
-      <input type="file" id="import-file" accept=".json" />
-      <button class="btn btn-export" onclick="exportData()">Export</button>
-      <button class="btn btn-clear" onclick="clearAll()">Clear All</button>
+      <button class="btn btn-primary" onclick="document.getElementById('import-file').click()">Import CSV</button>
+      <input type="file" id="import-file" accept=".csv,.json" />
+      <button class="btn btn-primary" onclick="exportCSV()">Export CSV</button>
+      <button class="btn btn-danger" onclick="resetToFile()">Reload CSV</button>
     </div>
   </header>
 
   <div id="map"></div>
-
+  <div class="search-box"><input type="text" id="search" placeholder="Search pins..." /></div>
   <div class="legend" id="legend"></div>
+  <div class="toast" id="toast">Click anywhere on the map to add a pin — edit data.csv to bulk-edit</div>
 
-  <div class="toast" id="toast">Click anywhere on the map to add a recommendation</div>
-
-  <!-- Add Marker Modal -->
+  <!-- Add Modal -->
   <div class="modal-overlay" id="add-modal">
     <div class="modal">
       <h2>Add Recommendation</h2>
@@ -259,13 +164,13 @@
       <label>Notes</label>
       <textarea id="rec-notes" placeholder="What makes it great?"></textarea>
       <div class="modal-actions">
-        <button class="btn btn-cancel" onclick="closeAddModal()">Cancel</button>
+        <button class="btn btn-cancel" onclick="closeModal('add-modal')">Cancel</button>
         <button class="btn btn-save" onclick="saveMarker()">Save</button>
       </div>
     </div>
   </div>
 
-  <!-- Edit Marker Modal -->
+  <!-- Edit Modal -->
   <div class="modal-overlay" id="edit-modal">
     <div class="modal">
       <h2>Edit Recommendation</h2>
@@ -275,65 +180,132 @@
       <div class="category-grid" id="edit-category-grid"></div>
       <label>Notes</label>
       <textarea id="edit-notes"></textarea>
-      <div class="modal-actions-edit">
+      <div class="modal-actions">
         <button class="btn btn-delete" onclick="deleteMarker()">Delete</button>
-        <button class="btn btn-cancel" onclick="closeEditModal()">Cancel</button>
+        <button class="btn btn-cancel" onclick="closeModal('edit-modal')">Cancel</button>
         <button class="btn btn-save" onclick="updateMarker()">Save</button>
       </div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
     // ── Categories ──
     const CATEGORIES = [
-      { id: 'food',         label: 'Food',          color: '#e94560' },
-      { id: 'drinks',       label: 'Drinks',        color: '#f5a623' },
-      { id: 'outdoors',     label: 'Outdoors',      color: '#4ecdc4' },
-      { id: 'music',        label: 'Live Music',    color: '#a855f7' },
-      { id: 'entertainment',label: 'Entertainment', color: '#3b82f6' },
-      { id: 'shopping',     label: 'Shopping',      color: '#ec4899' },
-      { id: 'coffee',       label: 'Coffee',        color: '#d97706' },
-      { id: 'fitness',      label: 'Fitness',       color: '#22c55e' },
+      { id: 'neighborhood', label: 'Neighborhoods',      color: '#94a3b8' },
+      { id: 'coffee',       label: 'Coffee',             color: '#d97706' },
+      { id: 'food',         label: 'Food',               color: '#e94560' },
+      { id: 'drinks',       label: 'Bars & Nightlife',   color: '#f5a623' },
+      { id: 'music',        label: 'Live Music',         color: '#a855f7' },
+      { id: 'festival',     label: 'Festivals & Events', color: '#fbbf24' },
+      { id: 'arts',         label: 'Arts & Culture',     color: '#f472b6' },
+      { id: 'shopping',     label: 'Shopping & Records', color: '#ec4899' },
+      { id: 'outdoors',     label: 'Outdoors & Nature',  color: '#4ecdc4' },
+      { id: 'entertainment',label: 'Entertainment',      color: '#3b82f6' },
+      { id: 'fitness',      label: 'Health & Wellness',  color: '#22c55e' },
+      { id: 'daytrip',      label: 'Day Trips',          color: '#06b6d4' },
     ];
 
     // ── State ──
-    let recommendations = JSON.parse(localStorage.getItem('austin-recs') || '[]');
+    let recommendations = [];
     let pendingLatLng = null;
     let selectedCategory = null;
     let editingId = null;
     let editCategory = null;
     let markerLayer = L.layerGroup();
+    let hiddenCategories = new Set(JSON.parse(localStorage.getItem('austin-recs-hidden') || '[]'));
+    let searchQuery = '';
+
+    // ── CSV Parsing ──
+    function parseCSVText(text) {
+      const result = Papa.parse(text.trim(), {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false,
+      });
+      return result.data.map(row => ({
+        id: (row.id || '').trim(),
+        name: (row.name || '').trim(),
+        category: (row.category || '').trim(),
+        lat: parseFloat(row.lat),
+        lng: parseFloat(row.lng),
+        notes: (row.notes || '').trim(),
+      })).filter(r => r.name && !isNaN(r.lat) && !isNaN(r.lng));
+    }
+
+    function toCSVText(data) {
+      return Papa.unparse(data.map(r => ({
+        id: r.id,
+        name: r.name,
+        category: r.category,
+        lat: r.lat,
+        lng: r.lng,
+        notes: r.notes || '',
+      })), { columns: ['id','name','category','lat','lng','notes'] });
+    }
+
+    // ── Load data: localStorage first, then fetch data.csv ──
+    async function loadData() {
+      const cached = localStorage.getItem('austin-recs-v3');
+      if (cached) {
+        recommendations = JSON.parse(cached);
+        renderMarkers();
+        return;
+      }
+      await loadFromCSVFile();
+    }
+
+    async function loadFromCSVFile() {
+      try {
+        const resp = await fetch('data.csv?t=' + Date.now());
+        if (!resp.ok) throw new Error('No CSV found');
+        const text = await resp.text();
+        recommendations = parseCSVText(text);
+        save();
+        renderMarkers();
+      } catch (e) {
+        console.warn('Could not load data.csv:', e);
+        recommendations = [];
+        renderMarkers();
+      }
+    }
+
+    // ── Persistence ──
+    function save() {
+      localStorage.setItem('austin-recs-v3', JSON.stringify(recommendations));
+    }
 
     // ── Map ──
-    const map = L.map('map', {
-      center: [30.2672, -97.7431],
-      zoom: 13,
-      zoomControl: false,
-    });
-
+    const map = L.map('map', { center: [30.2672, -97.7431], zoom: 13, zoomControl: false });
     L.control.zoom({ position: 'topright' }).addTo(map);
-
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19,
     }).addTo(map);
-
     markerLayer.addTo(map);
 
-    // ── Build Legend ──
+    // ── Legend with toggles ──
     function buildLegend() {
       const el = document.getElementById('legend');
-      el.innerHTML = '<h3>Categories</h3>' + CATEGORIES.map(c =>
-        `<div class="legend-item">
+      el.innerHTML = '<h3>Filter Categories</h3>' + CATEGORIES.map(c => {
+        const disabled = hiddenCategories.has(c.id) ? ' disabled' : '';
+        return `<div class="legend-item${disabled}" data-cat="${c.id}" onclick="toggleCategory('${c.id}')">
           <div class="legend-dot" style="background:${c.color}"></div>
           ${c.label}
-        </div>`
-      ).join('');
+        </div>`;
+      }).join('');
     }
     buildLegend();
 
-    // ── Build Category Buttons ──
+    function toggleCategory(id) {
+      if (hiddenCategories.has(id)) hiddenCategories.delete(id);
+      else hiddenCategories.add(id);
+      localStorage.setItem('austin-recs-hidden', JSON.stringify([...hiddenCategories]));
+      buildLegend();
+      renderMarkers();
+    }
+
+    // ── Category Buttons ──
     function buildCategoryButtons(containerId, onSelect) {
       const container = document.getElementById(containerId);
       container.innerHTML = '';
@@ -352,40 +324,39 @@
         container.appendChild(btn);
       });
     }
-
     buildCategoryButtons('category-grid', id => { selectedCategory = id; });
     buildCategoryButtons('edit-category-grid', id => { editCategory = id; });
 
     // ── Render Markers ──
     function renderMarkers() {
       markerLayer.clearLayers();
+      const q = searchQuery.toLowerCase();
       recommendations.forEach(rec => {
+        if (hiddenCategories.has(rec.category)) return;
+        if (q && !rec.name.toLowerCase().includes(q) && !(rec.notes || '').toLowerCase().includes(q)) return;
+
         const cat = CATEGORIES.find(c => c.id === rec.category) || CATEGORIES[0];
+        const isNeighborhood = rec.category === 'neighborhood';
         const marker = L.circleMarker([rec.lat, rec.lng], {
-          radius: 10,
+          radius: isNeighborhood ? 14 : 9,
           fillColor: cat.color,
-          color: 'rgba(255,255,255,0.5)',
-          weight: 3,
-          fillOpacity: 0.9,
-          className: 'custom-marker',
+          color: isNeighborhood ? cat.color : 'rgba(255,255,255,0.5)',
+          weight: isNeighborhood ? 2 : 3,
+          fillOpacity: isNeighborhood ? 0.25 : 0.9,
         });
 
         const tooltipContent = `<strong>${rec.name}</strong><br><em>${cat.label}</em>${rec.notes ? '<br>' + rec.notes : ''}`;
         marker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -8] });
-
-        marker.on('click', (e) => {
-          L.DomEvent.stopPropagation(e);
-          openEditModal(rec.id);
-        });
-
+        marker.on('click', (e) => { L.DomEvent.stopPropagation(e); openEditModal(rec.id); });
         markerLayer.addLayer(marker);
       });
     }
 
-    // ── Persistence ──
-    function save() {
-      localStorage.setItem('austin-recs', JSON.stringify(recommendations));
-    }
+    // ── Search ──
+    document.getElementById('search').addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim();
+      renderMarkers();
+    });
 
     // ── Map Click → Add ──
     map.on('click', (e) => {
@@ -398,32 +369,26 @@
       setTimeout(() => document.getElementById('rec-name').focus(), 100);
     });
 
-    function closeAddModal() {
-      document.getElementById('add-modal').classList.remove('active');
-      pendingLatLng = null;
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+      if (id === 'add-modal') pendingLatLng = null;
+      if (id === 'edit-modal') editingId = null;
     }
 
     function saveMarker() {
       const name = document.getElementById('rec-name').value.trim();
       if (!name) { alert('Please enter a name.'); return; }
       if (!selectedCategory) { alert('Please pick a category.'); return; }
-      const notes = document.getElementById('rec-notes').value.trim();
-
       recommendations.push({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        name,
-        category: selectedCategory,
-        notes,
-        lat: pendingLatLng.lat,
-        lng: pendingLatLng.lng,
+        name, category: selectedCategory,
+        notes: document.getElementById('rec-notes').value.trim(),
+        lat: pendingLatLng.lat, lng: pendingLatLng.lng,
       });
-
-      save();
-      renderMarkers();
-      closeAddModal();
+      save(); renderMarkers(); closeModal('add-modal');
     }
 
-    // ── Edit Modal ──
+    // ── Edit ──
     function openEditModal(id) {
       const rec = recommendations.find(r => r.id === id);
       if (!rec) return;
@@ -437,11 +402,6 @@
       document.getElementById('edit-modal').classList.add('active');
     }
 
-    function closeEditModal() {
-      document.getElementById('edit-modal').classList.remove('active');
-      editingId = null;
-    }
-
     function updateMarker() {
       const rec = recommendations.find(r => r.id === editingId);
       if (!rec) return;
@@ -451,68 +411,63 @@
       rec.name = name;
       rec.category = editCategory;
       rec.notes = document.getElementById('edit-notes').value.trim();
-      save();
-      renderMarkers();
-      closeEditModal();
+      save(); renderMarkers(); closeModal('edit-modal');
     }
 
     function deleteMarker() {
       if (!confirm('Delete this recommendation?')) return;
       recommendations = recommendations.filter(r => r.id !== editingId);
-      save();
-      renderMarkers();
-      closeEditModal();
+      save(); renderMarkers(); closeModal('edit-modal');
     }
 
-    // ── Export / Import ──
-    function exportData() {
-      const blob = new Blob([JSON.stringify(recommendations, null, 2)], { type: 'application/json' });
+    // ── Export CSV ──
+    function exportCSV() {
+      const csv = toCSVText(recommendations);
+      const blob = new Blob([csv], { type: 'text/csv' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'austin-recs.json';
+      a.download = 'data.csv';
       a.click();
     }
 
+    // ── Import CSV ──
     document.getElementById('import-file').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (ev) => {
         try {
-          const data = JSON.parse(ev.target.result);
-          if (Array.isArray(data)) {
-            recommendations = data;
-            save();
-            renderMarkers();
+          const text = ev.target.result;
+          if (file.name.endsWith('.json')) {
+            const data = JSON.parse(text);
+            if (Array.isArray(data)) recommendations = data;
+          } else {
+            recommendations = parseCSVText(text);
           }
-        } catch { alert('Invalid file format.'); }
+          save(); renderMarkers();
+        } catch { alert('Could not parse file.'); }
       };
       reader.readAsText(file);
       e.target.value = '';
     });
 
-    function clearAll() {
-      if (!confirm('Remove all recommendations?')) return;
-      recommendations = [];
-      save();
-      renderMarkers();
+    // ── Reload from data.csv (discard local edits) ──
+    function resetToFile() {
+      if (!confirm('Reload from data.csv? This will discard any pins you added in the browser.')) return;
+      localStorage.removeItem('austin-recs-v3');
+      loadFromCSVFile();
     }
 
-    // ── Keyboard shortcut: Escape closes modals ──
+    // ── Keyboard ──
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeAddModal();
-        closeEditModal();
-      }
+      if (e.key === 'Escape') { closeModal('add-modal'); closeModal('edit-modal'); }
     });
 
-    // ── Fade out toast ──
-    setTimeout(() => {
-      document.getElementById('toast').style.opacity = '0';
-    }, 4000);
+    // ── Toast ──
+    setTimeout(() => { document.getElementById('toast').style.opacity = '0'; }, 5000);
 
-    // ── Initial render ──
-    renderMarkers();
+    // ── Init ──
+    loadData();
   </script>
 </body>
 </html>
