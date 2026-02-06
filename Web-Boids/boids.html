@@ -2,17 +2,40 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>3D Boid Simulation</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
-  canvas { display: block; }
+  body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; }
+  canvas { display: block; touch-action: none; }
   #hud {
-    position: fixed; top: 16px; left: 16px;
+    position: fixed; top: 10px; left: 10px;
     color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.6;
     pointer-events: none; user-select: none;
   }
   #hud span { color: #0ff; }
+  #touch-controls {
+    display: none;
+    position: fixed; bottom: 16px; left: 0; right: 0;
+    justify-content: center; gap: 10px;
+    pointer-events: none; user-select: none; z-index: 10;
+  }
+  #touch-controls button {
+    pointer-events: auto;
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.08);
+    color: #fff; font-size: 18px; font-family: inherit;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  #touch-controls button:active { background: rgba(255,255,255,0.25); }
+  #touch-hint {
+    display: none;
+    position: fixed; bottom: 78px; left: 0; right: 0;
+    text-align: center; color: rgba(255,255,255,0.4); font-size: 11px;
+    pointer-events: none; user-select: none;
+  }
 </style>
 </head>
 <body>
@@ -22,13 +45,24 @@
   Speed: <span id="speedDisplay">1.00</span>x<br>
   Rotation: <span id="rotDisplay">0.0</span>&deg;<br>
   Cursor: <span id="cursorDisplay">0, 0</span><br><br>
-  <small>
+  <small id="desktop-hints">
     Arrow Up/Down &mdash; speed<br>
     Arrow Left/Right &mdash; rotate<br>
     +/&minus; &mdash; add/remove boids<br>
     Mouse &mdash; attract | Click &mdash; repel
   </small>
+  <small id="mobile-hints" style="display:none">
+    Drag &mdash; attract | Two-finger drag &mdash; rotate<br>
+    Long press &mdash; repel | Buttons below &mdash; controls
+  </small>
 </div>
+<div id="touch-controls">
+  <button id="btn-slower" aria-label="Slower">&#9661;</button>
+  <button id="btn-faster" aria-label="Faster">&#9651;</button>
+  <button id="btn-fewer" aria-label="Fewer boids">&minus;</button>
+  <button id="btn-more" aria-label="More boids">+</button>
+</div>
+<div id="touch-hint">Drag to attract &bull; Long press to repel</div>
 <canvas id="c"></canvas>
 <script>
 const canvas = document.getElementById('c');
@@ -610,6 +644,107 @@ window.addEventListener('keyup', e => keys[e.key] = false);
 window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
 window.addEventListener('mousedown', e => { mouseDown = true; });
 window.addEventListener('mouseup', e => { mouseDown = false; });
+
+// --- Touch support ---
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+let touchActive = false;
+let longPressTimer = null;
+let lastPinchDist = 0;
+let twoFingerRotating = false;
+
+if (isTouchDevice) {
+  document.getElementById('touch-controls').style.display = 'flex';
+  document.getElementById('touch-hint').style.display = 'block';
+  document.getElementById('desktop-hints').style.display = 'none';
+  document.getElementById('mobile-hints').style.display = 'block';
+
+  // Touch button controls
+  const btnFaster = document.getElementById('btn-faster');
+  const btnSlower = document.getElementById('btn-slower');
+  const btnMore = document.getElementById('btn-more');
+  const btnFewer = document.getElementById('btn-fewer');
+
+  let btnInterval = null;
+  function startRepeat(fn) { fn(); btnInterval = setInterval(fn, 100); }
+  function stopRepeat() { clearInterval(btnInterval); btnInterval = null; }
+
+  btnFaster.addEventListener('touchstart', e => { e.preventDefault(); startRepeat(() => speedMultiplier = Math.min(5, speedMultiplier + 0.05)); });
+  btnFaster.addEventListener('touchend', e => { e.preventDefault(); stopRepeat(); });
+  btnSlower.addEventListener('touchstart', e => { e.preventDefault(); startRepeat(() => speedMultiplier = Math.max(0.1, speedMultiplier - 0.05)); });
+  btnSlower.addEventListener('touchend', e => { e.preventDefault(); stopRepeat(); });
+  btnMore.addEventListener('touchstart', e => { e.preventDefault(); targetCount = Math.min(500, targetCount + 10); syncBoidCount(); });
+  btnFewer.addEventListener('touchstart', e => { e.preventDefault(); targetCount = Math.max(10, targetCount - 10); syncBoidCount(); });
+}
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const touches = e.touches;
+
+  if (touches.length === 1) {
+    touchActive = true;
+    mouseX = touches[0].clientX;
+    mouseY = touches[0].clientY;
+    mouseDown = false;
+    // Start long press detection for repel
+    longPressTimer = setTimeout(() => { mouseDown = true; }, 300);
+  }
+
+  if (touches.length === 2) {
+    // Cancel long press if second finger arrives
+    clearTimeout(longPressTimer);
+    mouseDown = false;
+    twoFingerRotating = true;
+    const dx = touches[1].clientX - touches[0].clientX;
+    const dy = touches[1].clientY - touches[0].clientY;
+    lastPinchDist = Math.atan2(dy, dx);
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touches = e.touches;
+
+  if (touches.length === 1 && !twoFingerRotating) {
+    mouseX = touches[0].clientX;
+    mouseY = touches[0].clientY;
+    // Cancel long press if finger moves significantly
+    clearTimeout(longPressTimer);
+  }
+
+  if (touches.length === 2) {
+    const dx = touches[1].clientX - touches[0].clientX;
+    const dy = touches[1].clientY - touches[0].clientY;
+    const angle = Math.atan2(dy, dx);
+    const delta = angle - lastPinchDist;
+    rotationVel += delta * 0.3;
+    lastPinchDist = angle;
+
+    // Track center of two fingers as cursor
+    mouseX = (touches[0].clientX + touches[1].clientX) / 2;
+    mouseY = (touches[0].clientY + touches[1].clientY) / 2;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  clearTimeout(longPressTimer);
+  if (e.touches.length === 0) {
+    touchActive = false;
+    mouseDown = false;
+    twoFingerRotating = false;
+  } else if (e.touches.length === 1) {
+    twoFingerRotating = false;
+    mouseX = e.touches[0].clientX;
+    mouseY = e.touches[0].clientY;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchcancel', e => {
+  clearTimeout(longPressTimer);
+  touchActive = false;
+  mouseDown = false;
+  twoFingerRotating = false;
+}, { passive: false });
 
 // --- Loop ---
 let lastTime = performance.now();
