@@ -17,6 +17,7 @@
 </head>
 <body>
 <div id="hud">
+  FPS: <span id="fpsDisplay">0</span><br>
   Boids: <span id="countDisplay">150</span><br>
   Speed: <span id="speedDisplay">1.00</span>x<br>
   Rotation: <span id="rotDisplay">0.0</span>&deg;<br>
@@ -612,6 +613,7 @@ window.addEventListener('mouseup', e => { mouseDown = false; });
 
 // --- Loop ---
 let lastTime = performance.now();
+let fpsFrames = 0, fpsLastTime = performance.now(), fpsValue = 0;
 function loop(now) {
   const rawDt = Math.min((now - lastTime) / 16.667, 3); // normalize to ~60fps
   lastTime = now;
@@ -625,7 +627,16 @@ function loop(now) {
   rotationY += rotationVel;
   rotationVel *= 0.95; // friction
 
+  // FPS counter
+  fpsFrames++;
+  if (now - fpsLastTime >= 500) {
+    fpsValue = Math.round(fpsFrames / ((now - fpsLastTime) / 1000));
+    fpsFrames = 0;
+    fpsLastTime = now;
+  }
+
   // Update HUD
+  document.getElementById('fpsDisplay').textContent = fpsValue;
   document.getElementById('countDisplay').textContent = boids.length;
   document.getElementById('speedDisplay').textContent = speedMultiplier.toFixed(2);
   document.getElementById('rotDisplay').textContent = ((rotationY * 180 / Math.PI) % 360).toFixed(1);
