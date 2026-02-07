@@ -37,8 +37,8 @@
     pointer-events: none; user-select: none;
   }
   #social-slider-wrap {
-    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-    display: flex; align-items: center; gap: 8px;
+    position: fixed; top: 10px; left: 170px;
+    display: flex; align-items: center; gap: 6px;
     z-index: 10; user-select: none;
   }
   #social-slider-wrap label {
@@ -70,17 +70,19 @@
   Boids: <span id="countDisplay">150</span><br>
   Speed: <span id="speedDisplay">1.00</span>x<br>
   Rotation: <span id="rotDisplay">0.0</span>&deg;<br>
+  Zoom: <span id="zoomDisplay">1.00</span>x<br>
   Social: <span id="socialDisplay">0.00</span><br>
   Cursor: <span id="cursorDisplay">0, 0</span><br><br>
   <small id="desktop-hints">
     Arrow Up/Down &mdash; speed<br>
     Arrow Left/Right &mdash; rotate<br>
+    Page Up/Down &mdash; zoom<br>
     +/&minus; &mdash; add/remove boids<br>
     Mouse &mdash; attract | Click &mdash; repel
   </small>
   <small id="mobile-hints" style="display:none">
-    Drag &mdash; attract | Two-finger drag &mdash; rotate<br>
-    Long press &mdash; repel | Buttons below &mdash; controls
+    Drag &mdash; attract | Long press &mdash; repel<br>
+    Two-finger rotate &mdash; pinch to zoom
   </small>
 </div>
 <div id="touch-controls">
@@ -126,6 +128,7 @@ let mouseX = W / 2, mouseY = H / 2;
 let mouseDown = false;
 let targetCount = 150;
 let socialForce = 0; // -1 (repel) to +1 (attract)
+let zoom = 1.0;           // 0.3 to 3.0
 
 const BOUNDS = 400;        // 3D cube half-size
 const FOV = 600;
@@ -156,7 +159,7 @@ function rotateYAxis(x, y, z, angle) {
 
 function project(x, y, z) {
   const r = rotateYAxis(x, y, z, rotationY);
-  const perspective = FOV / (FOV + r.z + BOUNDS * 1.5);
+  const perspective = zoom * FOV / (FOV + r.z + BOUNDS * 1.5);
   return {
     sx: W / 2 + r.x * perspective,
     sy: H / 2 + r.y * perspective,
@@ -671,7 +674,7 @@ window.addEventListener('keydown', e => {
     targetCount = Math.max(10, targetCount - 10);
     syncBoidCount();
   }
-  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','+','=','-','_'].includes(e.key)) {
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','+','=','-','_','PageUp','PageDown'].includes(e.key)) {
     e.preventDefault();
   }
 });
@@ -679,6 +682,12 @@ window.addEventListener('keyup', e => keys[e.key] = false);
 window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
 window.addEventListener('mousedown', e => { mouseDown = true; });
 window.addEventListener('mouseup', e => { mouseDown = false; });
+
+// Mouse wheel zoom
+window.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom = Math.min(3.0, Math.max(0.3, zoom - e.deltaY * 0.001));
+}, { passive: false });
 
 // Social force slider
 const socialSlider = document.getElementById('social-slider');
@@ -690,15 +699,15 @@ socialSlider.addEventListener('input', e => {
 const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 let touchActive = false;
 let longPressTimer = null;
+let lastPinchAngle = 0;
 let lastPinchDist = 0;
-let twoFingerRotating = false;
+let twoFingerActive = false;
 
 if (isTouchDevice) {
   document.getElementById('touch-controls').style.display = 'flex';
   document.getElementById('touch-hint').style.display = 'block';
   document.getElementById('desktop-hints').style.display = 'none';
   document.getElementById('mobile-hints').style.display = 'block';
-  document.getElementById('social-slider-wrap').style.bottom = '80px';
 
   // Touch button controls
   const btnFaster = document.getElementById('btn-faster');
@@ -735,10 +744,11 @@ canvas.addEventListener('touchstart', e => {
     // Cancel long press if second finger arrives
     clearTimeout(longPressTimer);
     mouseDown = false;
-    twoFingerRotating = true;
+    twoFingerActive = true;
     const dx = touches[1].clientX - touches[0].clientX;
     const dy = touches[1].clientY - touches[0].clientY;
-    lastPinchDist = Math.atan2(dy, dx);
+    lastPinchAngle = Math.atan2(dy, dx);
+    lastPinchDist = Math.sqrt(dx * dx + dy * dy);
   }
 }, { passive: false });
 
@@ -746,7 +756,7 @@ canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   const touches = e.touches;
 
-  if (touches.length === 1 && !twoFingerRotating) {
+  if (touches.length === 1 && !twoFingerActive) {
     mouseX = touches[0].clientX;
     mouseY = touches[0].clientY;
     // Cancel long press if finger moves significantly
@@ -756,10 +766,20 @@ canvas.addEventListener('touchmove', e => {
   if (touches.length === 2) {
     const dx = touches[1].clientX - touches[0].clientX;
     const dy = touches[1].clientY - touches[0].clientY;
+
+    // Rotation from angle change
     const angle = Math.atan2(dy, dx);
-    const delta = angle - lastPinchDist;
-    rotationVel += delta * 0.3;
-    lastPinchDist = angle;
+    const angleDelta = angle - lastPinchAngle;
+    rotationVel += angleDelta * 0.3;
+    lastPinchAngle = angle;
+
+    // Zoom from pinch distance change
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (lastPinchDist > 0) {
+      const scale = dist / lastPinchDist;
+      zoom = Math.min(3.0, Math.max(0.3, zoom * scale));
+    }
+    lastPinchDist = dist;
 
     // Track center of two fingers as cursor
     mouseX = (touches[0].clientX + touches[1].clientX) / 2;
@@ -773,9 +793,9 @@ canvas.addEventListener('touchend', e => {
   if (e.touches.length === 0) {
     touchActive = false;
     mouseDown = false;
-    twoFingerRotating = false;
+    twoFingerActive = false;
   } else if (e.touches.length === 1) {
-    twoFingerRotating = false;
+    twoFingerActive = false;
     mouseX = e.touches[0].clientX;
     mouseY = e.touches[0].clientY;
   }
@@ -785,7 +805,7 @@ canvas.addEventListener('touchcancel', e => {
   clearTimeout(longPressTimer);
   touchActive = false;
   mouseDown = false;
-  twoFingerRotating = false;
+  twoFingerActive = false;
 }, { passive: false });
 
 // --- Loop ---
@@ -800,6 +820,8 @@ function loop(now) {
   if (keys['ArrowDown'])  speedMultiplier = Math.max(0.1, speedMultiplier - 0.02);
   if (keys['ArrowLeft'])  rotationVel -= 0.002;
   if (keys['ArrowRight']) rotationVel += 0.002;
+  if (keys['PageUp'])     zoom = Math.min(3.0, zoom + 0.02);
+  if (keys['PageDown'])   zoom = Math.max(0.3, zoom - 0.02);
 
   rotationY += rotationVel;
   rotationVel *= 0.95; // friction
@@ -817,6 +839,7 @@ function loop(now) {
   document.getElementById('countDisplay').textContent = boids.length;
   document.getElementById('speedDisplay').textContent = speedMultiplier.toFixed(2);
   document.getElementById('rotDisplay').textContent = ((rotationY * 180 / Math.PI) % 360).toFixed(1);
+  document.getElementById('zoomDisplay').textContent = zoom.toFixed(2);
   document.getElementById('socialDisplay').textContent = socialForce.toFixed(2);
   document.getElementById('cursorDisplay').textContent = `${Math.round(mouseX)}, ${Math.round(mouseY)}`;
 
