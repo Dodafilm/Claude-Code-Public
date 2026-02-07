@@ -41,6 +41,7 @@
     .btn:hover { opacity: 0.85; }
     .btn-primary { background: #0f3460; color: #eee; }
     .btn-danger  { background: #e94560; color: #fff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     #map { flex: 1; z-index: 1; }
 
@@ -90,6 +91,10 @@
       font-size: 0.95rem; margin-bottom: 14px; font-family: inherit;
     }
     .modal textarea { resize: vertical; min-height: 60px; }
+
+    .modal .hint {
+      font-size: 0.72rem; color: #666; margin-top: -10px; margin-bottom: 14px;
+    }
 
     .category-grid {
       display: grid; grid-template-columns: 1fr 1fr 1fr;
@@ -141,6 +146,7 @@
   <header>
     <h1><span>Austin</span> Rec Map</h1>
     <div class="header-actions">
+      <button class="btn btn-primary" onclick="openAddByAddress()">+ Add by Address</button>
       <button class="btn btn-primary" onclick="document.getElementById('import-file').click()">Import CSV</button>
       <input type="file" id="import-file" accept=".csv,.json" />
       <button class="btn btn-primary" onclick="exportCSV()">Export CSV</button>
@@ -151,7 +157,7 @@
   <div id="map"></div>
   <div class="search-box"><input type="text" id="search" placeholder="Search pins..." /></div>
   <div class="legend" id="legend"></div>
-  <div class="toast" id="toast">Click anywhere on the map to add a pin — edit data.csv to bulk-edit</div>
+  <div class="toast" id="toast">Click anywhere on the map to add a pin — or use + Add by Address</div>
 
   <!-- Add Modal -->
   <div class="modal-overlay" id="add-modal">
@@ -159,13 +165,16 @@
       <h2>Add Recommendation</h2>
       <label>Name</label>
       <input type="text" id="rec-name" placeholder="e.g. Barton Springs Pool" />
+      <label>Address</label>
+      <input type="text" id="rec-address" placeholder="e.g. 1619 E 6th St, Austin, TX" />
+      <p class="hint" id="add-location-hint"></p>
       <label>Category</label>
       <div class="category-grid" id="category-grid"></div>
       <label>Notes</label>
       <textarea id="rec-notes" placeholder="What makes it great?"></textarea>
       <div class="modal-actions">
         <button class="btn btn-cancel" onclick="closeModal('add-modal')">Cancel</button>
-        <button class="btn btn-save" onclick="saveMarker()">Save</button>
+        <button class="btn btn-save" id="add-save-btn" onclick="saveMarker()">Save</button>
       </div>
     </div>
   </div>
@@ -176,6 +185,9 @@
       <h2>Edit Recommendation</h2>
       <label>Name</label>
       <input type="text" id="edit-name" />
+      <label>Address</label>
+      <input type="text" id="edit-address" placeholder="Address" />
+      <p class="hint">Changing the address will update the pin's position.</p>
       <label>Category</label>
       <div class="category-grid" id="edit-category-grid"></div>
       <label>Notes</label>
@@ -183,7 +195,7 @@
       <div class="modal-actions">
         <button class="btn btn-delete" onclick="deleteMarker()">Delete</button>
         <button class="btn btn-cancel" onclick="closeModal('edit-modal')">Cancel</button>
-        <button class="btn btn-save" onclick="updateMarker()">Save</button>
+        <button class="btn btn-save" id="edit-save-btn" onclick="updateMarker()">Save</button>
       </div>
     </div>
   </div>
@@ -217,6 +229,48 @@
     let hiddenCategories = new Set(JSON.parse(localStorage.getItem('austin-recs-hidden') || '[]'));
     let searchQuery = '';
 
+    // ── Geocoding via Nominatim (OpenStreetMap) ──
+    const geocodeCache = JSON.parse(localStorage.getItem('austin-recs-geocache') || '{}');
+
+    async function geocodeAddress(address) {
+      if (!address) return null;
+      if (geocodeCache[address]) return geocodeCache[address];
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
+      try {
+        const resp = await fetch(url, {
+          headers: { 'User-Agent': 'AustinRecMap/1.0' }
+        });
+        const data = await resp.json();
+        if (data.length > 0) {
+          const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+          geocodeCache[address] = result;
+          localStorage.setItem('austin-recs-geocache', JSON.stringify(geocodeCache));
+          return result;
+        }
+      } catch (e) { console.warn('Geocoding failed for:', address, e); }
+      return null;
+    }
+
+    async function geocodeMissing(recs) {
+      const toGeocode = recs.filter(r => r.address && (isNaN(r.lat) || isNaN(r.lng)));
+      if (toGeocode.length === 0) return;
+      showToastMsg(`Geocoding ${toGeocode.length} address${toGeocode.length > 1 ? 'es' : ''}...`, toGeocode.length * 1200 + 2000);
+      for (let i = 0; i < toGeocode.length; i++) {
+        const rec = toGeocode[i];
+        const result = await geocodeAddress(rec.address);
+        if (result) {
+          rec.lat = result.lat;
+          rec.lng = result.lng;
+        }
+        if (i < toGeocode.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1100)); // Nominatim rate limit: 1 req/sec
+        }
+      }
+      save();
+      renderMarkers();
+      showToastMsg('Geocoding complete!');
+    }
+
     // ── CSV Parsing ──
     function parseCSVText(text) {
       const result = Papa.parse(text.trim(), {
@@ -228,10 +282,11 @@
         id: (row.id || '').trim(),
         name: (row.name || '').trim(),
         category: (row.category || '').trim(),
+        address: (row.address || '').trim(),
         lat: parseFloat(row.lat),
         lng: parseFloat(row.lng),
         notes: (row.notes || '').trim(),
-      })).filter(r => r.name && !isNaN(r.lat) && !isNaN(r.lng));
+      })).filter(r => r.name && ((!isNaN(r.lat) && !isNaN(r.lng)) || r.address));
     }
 
     function toCSVText(data) {
@@ -239,10 +294,11 @@
         id: r.id,
         name: r.name,
         category: r.category,
+        address: r.address || '',
         lat: r.lat,
         lng: r.lng,
         notes: r.notes || '',
-      })), { columns: ['id','name','category','lat','lng','notes'] });
+      })), { columns: ['id','name','category','address','lat','lng','notes'] });
     }
 
     // ── Load data: localStorage first, then fetch data.csv ──
@@ -264,6 +320,8 @@
         recommendations = parseCSVText(text);
         save();
         renderMarkers();
+        // Geocode entries that have address but missing coordinates
+        await geocodeMissing(recommendations);
       } catch (e) {
         console.warn('Could not load data.csv:', e);
         recommendations = [];
@@ -284,10 +342,20 @@
     }).addTo(map);
     markerLayer.addTo(map);
 
-    // ── Legend with toggles ──
+    // ── Toast ──
+    function showToastMsg(msg, duration = 3000) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, duration);
+    }
+
+    // ── Legend with toggles (only shows categories that have data) ──
     function buildLegend() {
+      const activeCats = new Set(recommendations.map(r => r.category));
       const el = document.getElementById('legend');
-      el.innerHTML = '<h3>Filter Categories</h3>' + CATEGORIES.map(c => {
+      el.innerHTML = '<h3>Filter Categories</h3>' + CATEGORIES.filter(c => activeCats.has(c.id)).map(c => {
         const disabled = hiddenCategories.has(c.id) ? ' disabled' : '';
         return `<div class="legend-item${disabled}" data-cat="${c.id}" onclick="toggleCategory('${c.id}')">
           <div class="legend-dot" style="background:${c.color}"></div>
@@ -295,7 +363,6 @@
         </div>`;
       }).join('');
     }
-    buildLegend();
 
     function toggleCategory(id) {
       if (hiddenCategories.has(id)) hiddenCategories.delete(id);
@@ -330,10 +397,15 @@
     // ── Render Markers ──
     function renderMarkers() {
       markerLayer.clearLayers();
+      buildLegend();
       const q = searchQuery.toLowerCase();
       recommendations.forEach(rec => {
+        // Skip entries without valid coordinates (pending geocoding)
+        if (isNaN(rec.lat) || isNaN(rec.lng)) return;
         if (hiddenCategories.has(rec.category)) return;
-        if (q && !rec.name.toLowerCase().includes(q) && !(rec.notes || '').toLowerCase().includes(q)) return;
+        if (q && !rec.name.toLowerCase().includes(q)
+            && !(rec.notes || '').toLowerCase().includes(q)
+            && !(rec.address || '').toLowerCase().includes(q)) return;
 
         const cat = CATEGORIES.find(c => c.id === rec.category) || CATEGORIES[0];
         const isNeighborhood = rec.category === 'neighborhood';
@@ -345,14 +417,16 @@
           fillOpacity: isNeighborhood ? 0.25 : 0.9,
         });
 
-        const tooltipContent = `<strong>${rec.name}</strong><br><em>${cat.label}</em>${rec.notes ? '<br>' + rec.notes : ''}`;
+        let tooltipContent = `<strong>${rec.name}</strong><br><em>${cat.label}</em>`;
+        if (rec.address) tooltipContent += `<br><small>${rec.address}</small>`;
+        if (rec.notes) tooltipContent += `<br>${rec.notes}`;
         marker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -8] });
         marker.on('click', (e) => { L.DomEvent.stopPropagation(e); openEditModal(rec.id); });
         markerLayer.addLayer(marker);
       });
     }
 
-    // ── Search ──
+    // ── Search (also searches addresses) ──
     document.getElementById('search').addEventListener('input', (e) => {
       searchQuery = e.target.value.trim();
       renderMarkers();
@@ -363,11 +437,26 @@
       pendingLatLng = e.latlng;
       selectedCategory = null;
       document.getElementById('rec-name').value = '';
+      document.getElementById('rec-address').value = '';
       document.getElementById('rec-notes').value = '';
+      document.getElementById('add-location-hint').textContent = 'Pin placed at clicked location. Address is optional (for display).';
       document.querySelectorAll('#category-grid .category-btn').forEach(b => b.classList.remove('selected'));
       document.getElementById('add-modal').classList.add('active');
       setTimeout(() => document.getElementById('rec-name').focus(), 100);
     });
+
+    // ── Add by Address (no map click) ──
+    function openAddByAddress() {
+      pendingLatLng = null;
+      selectedCategory = null;
+      document.getElementById('rec-name').value = '';
+      document.getElementById('rec-address').value = '';
+      document.getElementById('rec-notes').value = '';
+      document.getElementById('add-location-hint').textContent = 'Address will be geocoded to place the pin on the map.';
+      document.querySelectorAll('#category-grid .category-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById('add-modal').classList.add('active');
+      setTimeout(() => document.getElementById('rec-address').focus(), 100);
+    }
 
     function closeModal(id) {
       document.getElementById(id).classList.remove('active');
@@ -375,15 +464,41 @@
       if (id === 'edit-modal') editingId = null;
     }
 
-    function saveMarker() {
+    async function saveMarker() {
       const name = document.getElementById('rec-name').value.trim();
+      const address = document.getElementById('rec-address').value.trim();
       if (!name) { alert('Please enter a name.'); return; }
       if (!selectedCategory) { alert('Please pick a category.'); return; }
+
+      let lat, lng;
+      if (pendingLatLng) {
+        // Map click — use clicked coordinates
+        lat = pendingLatLng.lat;
+        lng = pendingLatLng.lng;
+      } else if (address) {
+        // No map click — geocode the address
+        const btn = document.getElementById('add-save-btn');
+        btn.textContent = 'Geocoding...';
+        btn.disabled = true;
+        const result = await geocodeAddress(address);
+        btn.textContent = 'Save';
+        btn.disabled = false;
+        if (!result) {
+          alert('Could not geocode that address. Try a more specific address, or add the pin by clicking the map.');
+          return;
+        }
+        lat = result.lat;
+        lng = result.lng;
+      } else {
+        alert('Please enter an address, or close this and click the map to place a pin.');
+        return;
+      }
+
       recommendations.push({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        name, category: selectedCategory,
+        name, category: selectedCategory, address,
         notes: document.getElementById('rec-notes').value.trim(),
-        lat: pendingLatLng.lat, lng: pendingLatLng.lng,
+        lat, lng,
       });
       save(); renderMarkers(); closeModal('add-modal');
     }
@@ -395,6 +510,7 @@
       editingId = id;
       editCategory = rec.category;
       document.getElementById('edit-name').value = rec.name;
+      document.getElementById('edit-address').value = rec.address || '';
       document.getElementById('edit-notes').value = rec.notes || '';
       document.querySelectorAll('#edit-category-grid .category-btn').forEach(b => {
         b.classList.toggle('selected', b.dataset.id === rec.category);
@@ -402,13 +518,30 @@
       document.getElementById('edit-modal').classList.add('active');
     }
 
-    function updateMarker() {
+    async function updateMarker() {
       const rec = recommendations.find(r => r.id === editingId);
       if (!rec) return;
       const name = document.getElementById('edit-name').value.trim();
+      const address = document.getElementById('edit-address').value.trim();
       if (!name) { alert('Please enter a name.'); return; }
       if (!editCategory) { alert('Please pick a category.'); return; }
+
+      // Re-geocode if address changed
+      if (address && address !== (rec.address || '')) {
+        const btn = document.getElementById('edit-save-btn');
+        btn.textContent = 'Geocoding...';
+        btn.disabled = true;
+        const result = await geocodeAddress(address);
+        btn.textContent = 'Save';
+        btn.disabled = false;
+        if (result) {
+          rec.lat = result.lat;
+          rec.lng = result.lng;
+        }
+      }
+
       rec.name = name;
+      rec.address = address;
       rec.category = editCategory;
       rec.notes = document.getElementById('edit-notes').value.trim();
       save(); renderMarkers(); closeModal('edit-modal');
@@ -435,7 +568,7 @@
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
         try {
           const text = ev.target.result;
           if (file.name.endsWith('.json')) {
@@ -445,6 +578,8 @@
             recommendations = parseCSVText(text);
           }
           save(); renderMarkers();
+          // Geocode any imported entries missing coordinates
+          await geocodeMissing(recommendations);
         } catch { alert('Could not parse file.'); }
       };
       reader.readAsText(file);
