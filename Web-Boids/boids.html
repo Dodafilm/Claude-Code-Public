@@ -36,6 +36,32 @@
     text-align: center; color: rgba(255,255,255,0.4); font-size: 11px;
     pointer-events: none; user-select: none;
   }
+  #social-slider-wrap {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 8px;
+    z-index: 10; user-select: none;
+  }
+  #social-slider-wrap label {
+    color: rgba(255,255,255,0.5); font-size: 11px; font-family: 'Courier New', monospace;
+    white-space: nowrap;
+  }
+  #social-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 140px; height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, #f06030, #333 40%, #333 60%, #30c0f0);
+    outline: none; cursor: pointer;
+  }
+  #social-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #fff; border: 1.5px solid rgba(255,255,255,0.4);
+    box-shadow: 0 0 6px rgba(255,255,255,0.3);
+  }
+  #social-slider::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #fff; border: 1.5px solid rgba(255,255,255,0.4);
+    box-shadow: 0 0 6px rgba(255,255,255,0.3);
+  }
 </style>
 </head>
 <body>
@@ -44,6 +70,7 @@
   Boids: <span id="countDisplay">150</span><br>
   Speed: <span id="speedDisplay">1.00</span>x<br>
   Rotation: <span id="rotDisplay">0.0</span>&deg;<br>
+  Social: <span id="socialDisplay">0.00</span><br>
   Cursor: <span id="cursorDisplay">0, 0</span><br><br>
   <small id="desktop-hints">
     Arrow Up/Down &mdash; speed<br>
@@ -63,6 +90,11 @@
   <button id="btn-more" aria-label="More boids">+</button>
 </div>
 <div id="touch-hint">Drag to attract &bull; Long press to repel</div>
+<div id="social-slider-wrap">
+  <label id="social-label-repel">repel</label>
+  <input type="range" id="social-slider" min="-100" max="100" value="0" step="1">
+  <label id="social-label-attract">attract</label>
+</div>
 <canvas id="c"></canvas>
 <script>
 const canvas = document.getElementById('c');
@@ -93,6 +125,7 @@ let rotationVel = 0;
 let mouseX = W / 2, mouseY = H / 2;
 let mouseDown = false;
 let targetCount = 150;
+let socialForce = 0; // -1 (repel) to +1 (attract)
 
 const BOUNDS = 400;        // 3D cube half-size
 const FOV = 600;
@@ -171,11 +204,12 @@ function updateBoids(dt) {
       }
     }
 
-    // Cohesion
+    // Cohesion — socialForce scales from -1 (anti-cohere) to 3x at full attract
+    const cohScale = 0.005 * (1 + socialForce * 2);
     if (cohCount > 0) {
-      cohX = (cohX / cohCount - b.x) * 0.005;
-      cohY = (cohY / cohCount - b.y) * 0.005;
-      cohZ = (cohZ / cohCount - b.z) * 0.005;
+      cohX = (cohX / cohCount - b.x) * cohScale;
+      cohY = (cohY / cohCount - b.y) * cohScale;
+      cohZ = (cohZ / cohCount - b.z) * cohScale;
     }
 
     // Alignment
@@ -185,10 +219,11 @@ function updateBoids(dt) {
       aliZ = (aliZ / aliCount - b.vz) * 0.04;
     }
 
-    // Separation
-    sepX *= 0.15;
-    sepY *= 0.15;
-    sepZ *= 0.15;
+    // Separation — socialForce scales from 2x at full repel to 0 at full attract
+    const sepScale = 0.15 * (1 - socialForce);
+    sepX *= sepScale;
+    sepY *= sepScale;
+    sepZ *= sepScale;
 
     // Mouse attraction / repulsion
     const mdx = mouse3D.x - b.x;
@@ -645,6 +680,12 @@ window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clien
 window.addEventListener('mousedown', e => { mouseDown = true; });
 window.addEventListener('mouseup', e => { mouseDown = false; });
 
+// Social force slider
+const socialSlider = document.getElementById('social-slider');
+socialSlider.addEventListener('input', e => {
+  socialForce = parseInt(e.target.value) / 100;
+});
+
 // --- Touch support ---
 const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 let touchActive = false;
@@ -657,6 +698,7 @@ if (isTouchDevice) {
   document.getElementById('touch-hint').style.display = 'block';
   document.getElementById('desktop-hints').style.display = 'none';
   document.getElementById('mobile-hints').style.display = 'block';
+  document.getElementById('social-slider-wrap').style.bottom = '80px';
 
   // Touch button controls
   const btnFaster = document.getElementById('btn-faster');
@@ -775,6 +817,7 @@ function loop(now) {
   document.getElementById('countDisplay').textContent = boids.length;
   document.getElementById('speedDisplay').textContent = speedMultiplier.toFixed(2);
   document.getElementById('rotDisplay').textContent = ((rotationY * 180 / Math.PI) % 360).toFixed(1);
+  document.getElementById('socialDisplay').textContent = socialForce.toFixed(2);
   document.getElementById('cursorDisplay').textContent = `${Math.round(mouseX)}, ${Math.round(mouseY)}`;
 
   // Physics
