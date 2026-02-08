@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Austin Rec Map</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -115,12 +115,17 @@
     .btn-cancel { background: #0f3460; color: #eee; }
     .btn-delete { background: #6b2131; color: #fff; }
 
-    .leaflet-tooltip {
+    /* MapLibre popup (tooltip style) */
+    .maplibregl-popup-content {
       background: #16213e; color: #eee; border: 1px solid #0f3460;
-      border-radius: 6px; padding: 6px 12px; font-size: 0.85rem;
+      border-radius: 8px; padding: 8px 14px; font-size: 0.85rem;
       max-width: 260px; white-space: normal;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
-    .leaflet-tooltip-top::before { border-top-color: #0f3460; }
+    .maplibregl-popup-tip {
+      border-top-color: #16213e;
+    }
 
     .toast {
       position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
@@ -132,7 +137,7 @@
     #import-file { display: none; }
 
     .search-box {
-      position: absolute; top: 62px; right: 12px; z-index: 1000;
+      position: absolute; top: 62px; right: 54px; z-index: 1000;
     }
     .search-box input {
       padding: 8px 14px; border-radius: 8px; border: 1px solid #0f3460;
@@ -140,6 +145,40 @@
       width: 220px; font-family: inherit;
     }
     .search-box input::placeholder { color: #666; }
+
+    /* 3D Marker Styles */
+    .marker-3d {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid rgba(255,255,255,0.35);
+      position: relative;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .marker-3d::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 3px;
+      width: 8px; height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      filter: blur(1.5px);
+      pointer-events: none;
+    }
+    .marker-3d:hover {
+      transform: scale(1.5);
+      filter: brightness(1.25);
+      z-index: 100 !important;
+    }
+    .marker-neighborhood {
+      width: 30px; height: 30px;
+      opacity: 0.45;
+      border: 2px solid rgba(255,255,255,0.15);
+    }
+    .marker-neighborhood::after {
+      top: 4px; left: 5px;
+      width: 12px; height: 9px;
+    }
   </style>
 </head>
 <body>
@@ -200,7 +239,7 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
     // ── Categories ──
@@ -219,13 +258,29 @@
       { id: 'daytrip',      label: 'Day Trips',          color: '#06b6d4' },
     ];
 
+    // ── Color Helpers ──
+    function hexToRgb(hex) {
+      const n = parseInt(hex.replace('#', ''), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+    function lightenColor(hex, pct) {
+      const [r, g, b] = hexToRgb(hex);
+      const f = pct / 100;
+      return `rgb(${Math.round(r + (255 - r) * f)},${Math.round(g + (255 - g) * f)},${Math.round(b + (255 - b) * f)})`;
+    }
+    function darkenColor(hex, pct) {
+      const [r, g, b] = hexToRgb(hex);
+      const f = 1 - pct / 100;
+      return `rgb(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)})`;
+    }
+
     // ── State ──
     let recommendations = [];
     let pendingLatLng = null;
     let selectedCategory = null;
     let editingId = null;
     let editCategory = null;
-    let markerLayer = L.layerGroup();
+    let activeMarkers = [];
     let hiddenCategories = new Set(JSON.parse(localStorage.getItem('austin-recs-hidden') || '[]'));
     let searchQuery = '';
 
@@ -263,7 +318,7 @@
           rec.lng = result.lng;
         }
         if (i < toGeocode.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1100)); // Nominatim rate limit: 1 req/sec
+          await new Promise(resolve => setTimeout(resolve, 1100));
         }
       }
       save();
@@ -320,7 +375,6 @@
         recommendations = parseCSVText(text);
         save();
         renderMarkers();
-        // Geocode entries that have address but missing coordinates
         await geocodeMissing(recommendations);
       } catch (e) {
         console.warn('Could not load data.csv:', e);
@@ -334,13 +388,88 @@
       localStorage.setItem('austin-recs-v3', JSON.stringify(recommendations));
     }
 
-    // ── Map ──
-    const map = L.map('map', { center: [30.2672, -97.7431], zoom: 13, zoomControl: false });
-    L.control.zoom({ position: 'topright' }).addTo(map);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19,
-    }).addTo(map);
-    markerLayer.addTo(map);
+    // ── Map (MapLibre GL with 3D) ──
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      center: [-97.7431, 30.2672],
+      zoom: 13,
+      pitch: 50,
+      bearing: -15,
+      antialias: true,
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+
+    // Shared popup for tooltip-style hover
+    const hoverPopup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: [0, -16],
+      anchor: 'bottom',
+    });
+
+    // ── 3D Buildings + Terrain (after style loads) ──
+    map.on('load', () => {
+      const style = map.getStyle();
+
+      // Find the vector tile source from CARTO style
+      let vectorSourceId = null;
+      for (const [id, source] of Object.entries(style.sources)) {
+        if (source.type === 'vector') { vectorSourceId = id; break; }
+      }
+
+      if (vectorSourceId) {
+        // Remove existing flat building layers
+        for (const layer of [...style.layers]) {
+          if (layer['source-layer'] === 'building') {
+            try { map.removeLayer(layer.id); } catch (e) {}
+          }
+        }
+
+        // Find first symbol layer to insert buildings underneath labels
+        let labelLayerId;
+        for (const layer of style.layers) {
+          if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
+            labelLayerId = layer.id;
+            break;
+          }
+        }
+
+        // 3D building extrusions
+        map.addLayer({
+          id: '3d-buildings',
+          source: vectorSourceId,
+          'source-layer': 'building',
+          type: 'fill-extrusion',
+          minzoom: 13,
+          paint: {
+            'fill-extrusion-color': [
+              'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 8],
+              0, '#1e1e3a',
+              30, '#262650',
+              80, '#2e2e60'
+            ],
+            'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8],
+            'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+            'fill-extrusion-opacity': 0.75,
+          }
+        }, labelLayerId);
+      }
+
+      // Terrain (elevation)
+      map.addSource('terrain-dem', {
+        type: 'raster-dem',
+        tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+        encoding: 'terrarium',
+        tileSize: 256,
+        maxzoom: 15,
+      });
+      map.setTerrain({ source: 'terrain-dem', exaggeration: 1.5 });
+
+      // Load data after map is ready
+      loadData();
+    });
 
     // ── Toast ──
     function showToastMsg(msg, duration = 3000) {
@@ -351,7 +480,7 @@
       toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, duration);
     }
 
-    // ── Legend with toggles (only shows categories that have data) ──
+    // ── Legend with toggles ──
     function buildLegend() {
       const activeCats = new Set(recommendations.map(r => r.category));
       const el = document.getElementById('legend');
@@ -394,13 +523,15 @@
     buildCategoryButtons('category-grid', id => { selectedCategory = id; });
     buildCategoryButtons('edit-category-grid', id => { editCategory = id; });
 
-    // ── Render Markers ──
+    // ── Render Markers (3D spheres) ──
     function renderMarkers() {
-      markerLayer.clearLayers();
+      // Remove existing markers
+      activeMarkers.forEach(m => m.remove());
+      activeMarkers = [];
       buildLegend();
+
       const q = searchQuery.toLowerCase();
       recommendations.forEach(rec => {
-        // Skip entries without valid coordinates (pending geocoding)
         if (isNaN(rec.lat) || isNaN(rec.lng)) return;
         if (hiddenCategories.has(rec.category)) return;
         if (q && !rec.name.toLowerCase().includes(q)
@@ -409,24 +540,39 @@
 
         const cat = CATEGORIES.find(c => c.id === rec.category) || CATEGORIES[0];
         const isNeighborhood = rec.category === 'neighborhood';
-        const marker = L.circleMarker([rec.lat, rec.lng], {
-          radius: isNeighborhood ? 14 : 9,
-          fillColor: cat.color,
-          color: isNeighborhood ? cat.color : 'rgba(255,255,255,0.5)',
-          weight: isNeighborhood ? 2 : 3,
-          fillOpacity: isNeighborhood ? 0.25 : 0.9,
+
+        // Create 3D sphere marker element
+        const el = document.createElement('div');
+        el.className = 'marker-3d' + (isNeighborhood ? ' marker-neighborhood' : '');
+        const light = lightenColor(cat.color, 60);
+        const dark = darkenColor(cat.color, 45);
+        el.style.background = `radial-gradient(circle at 35% 30%, ${light}, ${cat.color} 50%, ${dark})`;
+        el.style.boxShadow = `0 3px 8px rgba(0,0,0,0.5), 0 0 12px ${cat.color}50`;
+
+        // Tooltip content
+        let tooltipHTML = `<strong>${rec.name}</strong><br><em>${cat.label}</em>`;
+        if (rec.address) tooltipHTML += `<br><small>${rec.address}</small>`;
+        if (rec.notes) tooltipHTML += `<br>${rec.notes}`;
+
+        el.addEventListener('mouseenter', () => {
+          hoverPopup.setLngLat([rec.lng, rec.lat]).setHTML(tooltipHTML).addTo(map);
+        });
+        el.addEventListener('mouseleave', () => {
+          hoverPopup.remove();
+        });
+        el.addEventListener('click', () => {
+          openEditModal(rec.id);
         });
 
-        let tooltipContent = `<strong>${rec.name}</strong><br><em>${cat.label}</em>`;
-        if (rec.address) tooltipContent += `<br><small>${rec.address}</small>`;
-        if (rec.notes) tooltipContent += `<br>${rec.notes}`;
-        marker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -8] });
-        marker.on('click', (e) => { L.DomEvent.stopPropagation(e); openEditModal(rec.id); });
-        markerLayer.addLayer(marker);
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([rec.lng, rec.lat])
+          .addTo(map);
+
+        activeMarkers.push(marker);
       });
     }
 
-    // ── Search (also searches addresses) ──
+    // ── Search ──
     document.getElementById('search').addEventListener('input', (e) => {
       searchQuery = e.target.value.trim();
       renderMarkers();
@@ -434,7 +580,7 @@
 
     // ── Map Click → Add ──
     map.on('click', (e) => {
-      pendingLatLng = e.latlng;
+      pendingLatLng = { lat: e.lngLat.lat, lng: e.lngLat.lng };
       selectedCategory = null;
       document.getElementById('rec-name').value = '';
       document.getElementById('rec-address').value = '';
@@ -445,7 +591,7 @@
       setTimeout(() => document.getElementById('rec-name').focus(), 100);
     });
 
-    // ── Add by Address (no map click) ──
+    // ── Add by Address ──
     function openAddByAddress() {
       pendingLatLng = null;
       selectedCategory = null;
@@ -472,11 +618,9 @@
 
       let lat, lng;
       if (pendingLatLng) {
-        // Map click — use clicked coordinates
         lat = pendingLatLng.lat;
         lng = pendingLatLng.lng;
       } else if (address) {
-        // No map click — geocode the address
         const btn = document.getElementById('add-save-btn');
         btn.textContent = 'Geocoding...';
         btn.disabled = true;
@@ -526,7 +670,6 @@
       if (!name) { alert('Please enter a name.'); return; }
       if (!editCategory) { alert('Please pick a category.'); return; }
 
-      // Re-geocode if address changed
       if (address && address !== (rec.address || '')) {
         const btn = document.getElementById('edit-save-btn');
         btn.textContent = 'Geocoding...';
@@ -578,7 +721,6 @@
             recommendations = parseCSVText(text);
           }
           save(); renderMarkers();
-          // Geocode any imported entries missing coordinates
           await geocodeMissing(recommendations);
         } catch { alert('Could not parse file.'); }
       };
@@ -586,7 +728,7 @@
       e.target.value = '';
     });
 
-    // ── Reload from data.csv (discard local edits) ──
+    // ── Reload from data.csv ──
     function resetToFile() {
       if (!confirm('Reload from data.csv? This will discard any pins you added in the browser.')) return;
       localStorage.removeItem('austin-recs-v3');
@@ -598,11 +740,8 @@
       if (e.key === 'Escape') { closeModal('add-modal'); closeModal('edit-modal'); }
     });
 
-    // ── Toast ──
+    // ── Toast auto-hide ──
     setTimeout(() => { document.getElementById('toast').style.opacity = '0'; }, 5000);
-
-    // ── Init ──
-    loadData();
   </script>
 </body>
 </html>
