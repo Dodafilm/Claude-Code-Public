@@ -146,38 +146,22 @@
     }
     .search-box input::placeholder { color: #666; }
 
-    /* 3D Marker Styles */
-    .marker-3d {
-      width: 20px; height: 20px;
-      border-radius: 50%;
+    /* 3D Pin Marker Styles */
+    .marker-pin {
       cursor: pointer;
-      border: 2px solid rgba(255,255,255,0.35);
-      position: relative;
+      line-height: 0;
       transition: transform 0.2s ease, filter 0.2s ease;
     }
-    .marker-3d::after {
-      content: '';
-      position: absolute;
-      top: 2px; left: 3px;
-      width: 8px; height: 6px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.5);
-      filter: blur(1.5px);
-      pointer-events: none;
-    }
-    .marker-3d:hover {
-      transform: scale(1.5);
+    .marker-pin:hover {
+      transform: scale(1.35) translateY(-5px);
       filter: brightness(1.25);
       z-index: 100 !important;
     }
-    .marker-neighborhood {
-      width: 30px; height: 30px;
-      opacity: 0.45;
-      border: 2px solid rgba(255,255,255,0.15);
+    .marker-pin-hood {
+      opacity: 0.5;
     }
-    .marker-neighborhood::after {
-      top: 4px; left: 5px;
-      width: 12px; height: 9px;
+    .marker-pin-hood:hover {
+      opacity: 0.85;
     }
   </style>
 </head>
@@ -397,17 +381,48 @@
       pitch: 50,
       bearing: -15,
       antialias: true,
+      dragRotate: true,
+      touchZoomRotate: true,
+      touchPitch: true,
+      maxPitch: 70,
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }), 'top-right');
 
-    // Shared popup for tooltip-style hover
+    // Shared popup for tooltip-style hover (offset accounts for pin height)
     const hoverPopup = new maplibregl.Popup({
       closeButton: false,
       closeOnClick: false,
-      offset: [0, -16],
+      offset: [0, -44],
       anchor: 'bottom',
     });
+
+    // ── Pin SVG Factory ──
+    let pinCounter = 0;
+    function createPinElement(color, isNeighborhood) {
+      const uid = 'pg' + (pinCounter++);
+      const light = lightenColor(color, 55);
+      const dark = darkenColor(color, 40);
+      const w = isNeighborhood ? 34 : 28;
+      const h = isNeighborhood ? 48 : 40;
+
+      const el = document.createElement('div');
+      el.className = 'marker-pin' + (isNeighborhood ? ' marker-pin-hood' : '');
+      el.innerHTML = `<svg width="${w}" height="${h}" viewBox="0 0 28 40" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="${uid}" cx="38%" cy="28%" r="60%">
+            <stop offset="0%" stop-color="${light}"/>
+            <stop offset="50%" stop-color="${color}"/>
+            <stop offset="100%" stop-color="${dark}"/>
+          </radialGradient>
+        </defs>
+        <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z"
+              fill="url(#${uid})" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+        <ellipse cx="10.5" cy="10" rx="5" ry="3.5" fill="rgba(255,255,255,0.3)"/>
+      </svg>`;
+      el.style.filter = `drop-shadow(0 3px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 8px ${color}40)`;
+      return el;
+    }
 
     // ── 3D Buildings + Terrain (after style loads) ──
     map.on('load', () => {
@@ -523,11 +538,12 @@
     buildCategoryButtons('category-grid', id => { selectedCategory = id; });
     buildCategoryButtons('edit-category-grid', id => { editCategory = id; });
 
-    // ── Render Markers (3D spheres) ──
+    // ── Render Markers (3D pin teardrops) ──
     function renderMarkers() {
       // Remove existing markers
       activeMarkers.forEach(m => m.remove());
       activeMarkers = [];
+      pinCounter = 0;
       buildLegend();
 
       const q = searchQuery.toLowerCase();
@@ -541,13 +557,8 @@
         const cat = CATEGORIES.find(c => c.id === rec.category) || CATEGORIES[0];
         const isNeighborhood = rec.category === 'neighborhood';
 
-        // Create 3D sphere marker element
-        const el = document.createElement('div');
-        el.className = 'marker-3d' + (isNeighborhood ? ' marker-neighborhood' : '');
-        const light = lightenColor(cat.color, 60);
-        const dark = darkenColor(cat.color, 45);
-        el.style.background = `radial-gradient(circle at 35% 30%, ${light}, ${cat.color} 50%, ${dark})`;
-        el.style.boxShadow = `0 3px 8px rgba(0,0,0,0.5), 0 0 12px ${cat.color}50`;
+        // Create 3D pin marker
+        const el = createPinElement(cat.color, isNeighborhood);
 
         // Tooltip content
         let tooltipHTML = `<strong>${rec.name}</strong><br><em>${cat.label}</em>`;
@@ -564,7 +575,8 @@
           openEditModal(rec.id);
         });
 
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        // anchor: 'bottom' — pin tip sits exactly on the coordinate
+        const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([rec.lng, rec.lat])
           .addTo(map);
 
