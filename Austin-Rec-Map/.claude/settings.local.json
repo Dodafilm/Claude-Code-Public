@@ -3,7 +3,21 @@
     "allow": [
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nadd Austin Rec Map - interactive recommendation map\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "WebFetch(domain:nominatim.openstreetmap.org)",
+      "Bash(curl:*)",
+      "WebFetch(domain:geocoding.geo.census.gov)",
+      "WebFetch(domain:www.latlong.net)",
+      "WebFetch(domain:www.google.com)",
+      "WebFetch(domain:www.yelp.com)",
+      "WebFetch(domain:civilgoatcoffee.com)",
+      "WebFetch(domain:www.kome-austin.com)",
+      "WebFetch(domain:empirecontrolroom.com)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:foursquare.com)",
+      "WebFetch(domain:geocode.maps.co)",
+      "Bash(powershell:*)",
+      "Bash(python3:*)"
     ]
   }
 }

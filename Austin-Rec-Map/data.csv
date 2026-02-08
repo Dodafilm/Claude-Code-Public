@@ -1,91 +1,91 @@
 id,name,category,address,lat,lng,notes
-c1,Flat Track Coffee,coffee,"1619 E 6th St, Austin, TX 78702",30.263,-97.720,Horchata + a shot
-c2,Cherrywood Coffeehouse,coffee,"1400 E 38 1/2 St, Austin, TX 78722",30.288,-97.714,"East side, lots of indoor seating"
-c3,Noble Joes,coffee,"S Pleasant Valley Rd, Austin, TX 78741",30.241,-97.732,"Food truck, riverside + south"
-c4,Strange Love Coffee,coffee,"E 6th St, Austin, TX 78702",30.265,-97.720,East side
-c5,Double Trouble,coffee,"1210 E 6th St, Austin, TX 78702",30.266,-97.722,"Coffee + food, nearby thrifting"
-c6,Merit Coffee,coffee,"1209 S Lamar Blvd, Austin, TX 78704",30.250,-97.775,S Lamar
-c7,Opa Coffee,coffee,"2050 S Lamar Blvd, Austin, TX 78704",30.248,-97.776,"Coffee + Greek food, S Lamar"
-c8,Mozart's Coffee,coffee,"3825 Lake Austin Blvd, Austin, TX 78703",30.290,-97.785,"Sit on the water, annual Christmas show"
-c9,Ghoul Coffee,coffee,"E 7th St, Austin, TX 78702",30.270,-97.720,"Food truck, east side"
-c10,El Tigre Coffee,coffee,"E 7th St, Austin, TX 78702",30.268,-97.718,"Food truck, east side"
-c11,Civil Goat Coffee,coffee,"5310 Airport Blvd, Austin, TX 78751",30.310,-97.723,
-b1,Mama Dearest,drinks,"E 6th St, Austin, TX 78702",30.264,-97.723,"Bar, east side"
-b2,Frazier's,drinks,"E Riverside Dr, Austin, TX 78741",30.243,-97.730,"Divey bar, riverside"
-b3,Busty's,drinks,"E 6th St, Austin, TX 78702",30.265,-97.722,Great sandwiches + ambience
-b4,Whisler's,drinks,"1816 E 6th St, Austin, TX 78702",30.264,-97.722,Bar on east 6th — tiny bar up the iron stairs outside
-b5,Side Bar,drinks,"602 E 7th St, Austin, TX 78701",30.267,-97.737,"Cheap drinks, divey"
-b6,Barbs / Swan Dive,drinks,"615 Red River St, Austin, TX 78701",30.268,-97.736,Dance club
-b7,Dirty Bills,drinks,"W 6th St, Austin, TX 78703",30.270,-97.753,Good when it's not a weekend
-b8,Workhorse,drinks,"Red River St, Austin, TX 78701",30.267,-97.735,
-b9,Cavalier,drinks,"Red River St, Austin, TX 78701",30.270,-97.737,
-b10,Egos,drinks,"E 6th St, Austin, TX 78702",30.267,-97.722,Also karaoke night
-b11,Shangri-La,drinks,"1016 E 6th St, Austin, TX 78702",30.264,-97.721,East side
-b12,Techo,drinks,"E 6th St, Austin, TX 78702",30.264,-97.724,
-b13,Tweety's,drinks,"E 6th St, Austin, TX 78702",30.265,-97.720,
-b14,Kinda Tropical,drinks,"E 6th St, Austin, TX 78702",30.265,-97.723,
-b15,Kitty Cohen's,drinks,"E 6th St, Austin, TX 78702",30.265,-97.721,
-b16,Butterfly Bar,drinks,"E Cesar Chavez St, Austin, TX 78702",30.262,-97.722,
-b17,West China Tea House,drinks,"E 7th St, Austin, TX 78702",30.270,-97.719,
-f1,Kome,food,"5301 Airport Blvd, Austin, TX 78751",30.300,-97.712,$ — Homestyle Japanese (Goldie's fav)
-f2,Brunch Brunch Baby,food,"E Riverside Dr, Austin, TX 78741",30.242,-97.728,"$ — Food truck, riverside"
-f3,Kemuri Tatsu-Ya,food,"2713 E 2nd St, Austin, TX 78702",30.267,-97.720,$$ — Japanese izakaya
-f4,Patrizi's,food,"2307 Manor Rd, Austin, TX 78722",30.284,-97.718,$ — Fresh made pasta
-f5,De Nada,food,"E 6th St, Austin, TX 78702",30.267,-97.722,$ — Mexican + margs
-f6,Uchi,food,"801 S Lamar Blvd, Austin, TX 78704",30.253,-97.773,$$ — Expensive and delicious sushi
-f7,Loro,food,"2115 S Lamar Blvd, Austin, TX 78704",30.249,-97.774,$ — Japanese BBQ fusion
-f8,OG Chuy's,food,"1728 Barton Springs Rd, Austin, TX 78704",30.260,-97.768,"$ — Tex mex, get the creamy jalapeno sauce"
-f9,Homeslice Pizza,food,"1415 S Congress Ave, Austin, TX 78704",30.248,-97.750,$ — Pizza on S Congress
-f10,Ramen Tatsu-Ya,food,"1234 S Lamar Blvd, Austin, TX 78704",30.249,-97.777,$ — Amazing ramen
-f11,Tiki Tatsu-Ya,food,"1300 E 6th St, Austin, TX 78702",30.263,-97.721,"$ — Immersive tiki drink bar, sister to Ramen Tatsu-Ya"
-f12,Bambino's Pizza,food,"E 6th St, Austin, TX 78702",30.265,-97.719,"$ — Pizza, east side"
-f13,Juiceland,food,"Red River St, Austin, TX 78701",30.268,-97.735,$ — Smoothies!
-f14,Foreign & Domestic,food,"306 E 53rd St, Austin, TX 78751",30.310,-97.726,"$$ — Oysters on Tuesdays, great menu"
-f15,Clark's Oyster Bar,food,"1200 W 6th St, Austin, TX 78703",30.268,-97.750,$$ — Oysters
-f16,Jew Boy Sliders,food,"E 6th St, Austin, TX 78702",30.264,-97.724,$ — BEST burger/sliders
-f17,Granny's Tacos,food,"E Cesar Chavez St, Austin, TX 78702",30.263,-97.717,"$ — Food truck, east side"
-f18,Las Trancas,food,"E 6th St, Austin, TX 78702",30.266,-97.716,"$ — Food truck, east side"
-f19,Nervous Charlie's Bagels,food,"N Lamar Blvd, Austin, TX 78752",30.325,-97.730,$ — N Lamar
-f20,Rockstar Bagels,food,"Springdale Rd, Austin, TX 78723",30.265,-97.695,$ — Far east side
-s1,Rock n Roll Rentals,shopping,"N Loop Blvd, Austin, TX 78751",30.320,-97.725,Cheap rental + monthly synth of the month
+c1,Flat Track Coffee,coffee,"1619 E 6th St, Austin, TX 78702",,,Horchata + a shot
+c2,Cherrywood Coffeehouse,coffee,"1400 E 38 1/2 St, Austin, TX 78722",,,"East side, lots of indoor seating"
+c3,Noble Joes,coffee,"S Pleasant Valley Rd, Austin, TX 78741",,,"Food truck, riverside + south"
+c4,Strange Love Coffee,coffee,"E 6th St, Austin, TX 78702",,,East side
+c5,Double Trouble,coffee,"1210 E 6th St, Austin, TX 78702",,,"Coffee + food, nearby thrifting"
+c6,Merit Coffee,coffee,"1209 S Lamar Blvd, Austin, TX 78704",,,S Lamar
+c7,Opa Coffee,coffee,"2050 S Lamar Blvd, Austin, TX 78704",,,"Coffee + Greek food, S Lamar"
+c8,Mozart's Coffee,coffee,"3825 Lake Austin Blvd, Austin, TX 78703",,,"Sit on the water, annual Christmas show"
+c9,Ghoul Coffee,coffee,"E 7th St, Austin, TX 78702",,,"Food truck, east side"
+c10,El Tigre Coffee,coffee,"E 7th St, Austin, TX 78702",,,"Food truck, east side"
+c11,Civil Goat Coffee,coffee,"5310 Airport Blvd, Austin, TX 78751",,,
+b1,Mama Dearest,drinks,"E 6th St, Austin, TX 78702",,,"Bar, east side"
+b2,Frazier's,drinks,"E Riverside Dr, Austin, TX 78741",,,"Divey bar, riverside"
+b3,Busty's,drinks,"E 6th St, Austin, TX 78702",,,Great sandwiches + ambience
+b4,Whisler's,drinks,"1816 E 6th St, Austin, TX 78702",,,Bar on east 6th — tiny bar up the iron stairs outside
+b5,Side Bar,drinks,"602 E 7th St, Austin, TX 78701",,,"Cheap drinks, divey"
+b6,Barbs / Swan Dive,drinks,"615 Red River St, Austin, TX 78701",,,Dance club
+b7,Dirty Bills,drinks,"W 6th St, Austin, TX 78703",,,Good when it's not a weekend
+b8,Workhorse,drinks,"Red River St, Austin, TX 78701",,,
+b9,Cavalier,drinks,"Red River St, Austin, TX 78701",,,
+b10,Egos,drinks,"E 6th St, Austin, TX 78702",,,Also karaoke night
+b11,Shangri-La,drinks,"1016 E 6th St, Austin, TX 78702",,,East side
+b12,Techo,drinks,"E 6th St, Austin, TX 78702",,,
+b13,Tweety's,drinks,"E 6th St, Austin, TX 78702",,,
+b14,Kinda Tropical,drinks,"E 6th St, Austin, TX 78702",,,
+b15,Kitty Cohen's,drinks,"E 6th St, Austin, TX 78702",,,
+b16,Butterfly Bar,drinks,"E Cesar Chavez St, Austin, TX 78702",,,
+b17,West China Tea House,drinks,"E 7th St, Austin, TX 78702",,,
+f1,Kome,food,"5301 Airport Blvd, Austin, TX 78751",,,$ — Homestyle Japanese (Goldie's fav)
+f2,Brunch Brunch Baby,food,"E Riverside Dr, Austin, TX 78741",,,"$ — Food truck, riverside"
+f3,Kemuri Tatsu-Ya,food,"2713 E 2nd St, Austin, TX 78702",,,$$ — Japanese izakaya
+f4,Patrizi's,food,"2307 Manor Rd, Austin, TX 78722",,,$ — Fresh made pasta
+f5,De Nada,food,"E 6th St, Austin, TX 78702",,,$ — Mexican + margs
+f6,Uchi,food,"801 S Lamar Blvd, Austin, TX 78704",,,$$ — Expensive and delicious sushi
+f7,Loro,food,"2115 S Lamar Blvd, Austin, TX 78704",,,$ — Japanese BBQ fusion
+f8,OG Chuy's,food,"1728 Barton Springs Rd, Austin, TX 78704",,,"$ — Tex mex, get the creamy jalapeno sauce"
+f9,Homeslice Pizza,food,"1415 S Congress Ave, Austin, TX 78704",,,$ — Pizza on S Congress
+f10,Ramen Tatsu-Ya,food,"1234 S Lamar Blvd, Austin, TX 78704",,,$ — Amazing ramen
+f11,Tiki Tatsu-Ya,food,"1300 E 6th St, Austin, TX 78702",,,"$ — Immersive tiki drink bar, sister to Ramen Tatsu-Ya"
+f12,Bambino's Pizza,food,"E 6th St, Austin, TX 78702",,,"$ — Pizza, east side"
+f13,Juiceland,food,"Red River St, Austin, TX 78701",,,$ — Smoothies!
+f14,Foreign & Domestic,food,"306 E 53rd St, Austin, TX 78751",,,"$$ — Oysters on Tuesdays, great menu"
+f15,Clark's Oyster Bar,food,"1200 W 6th St, Austin, TX 78703",,,$$ — Oysters
+f16,Jew Boy Sliders,food,"E 6th St, Austin, TX 78702",,,$ — BEST burger/sliders
+f17,Granny's Tacos,food,"E Cesar Chavez St, Austin, TX 78702",,,"$ — Food truck, east side"
+f18,Las Trancas,food,"E 6th St, Austin, TX 78702",,,"$ — Food truck, east side"
+f19,Nervous Charlie's Bagels,food,"N Lamar Blvd, Austin, TX 78752",,,$ — N Lamar
+f20,Rockstar Bagels,food,"Springdale Rd, Austin, TX 78723",,,$ — Far east side
+s1,Rock n Roll Rentals,shopping,"N Loop Blvd, Austin, TX 78751",,,Cheap rental + monthly synth of the month
 s2,Switched On,shopping,"N Loop Blvd, Austin, TX 78751",30.318,-97.724,Buy synths & gear
-s3,Guitar Center,shopping,"Burnet Rd, Austin, TX 78758",30.350,-97.715,
-s4,End of an Ear,shopping,"S Congress Ave, Austin, TX 78704",30.248,-97.750,"Record store, S Congress"
-s5,Breakaway Records,shopping,"N Loop Blvd, Austin, TX 78751",30.318,-97.724,North Loop
-s6,Antone's Records,shopping,"Congress Ave, Austin, TX 78701",30.268,-97.743,
-s7,Waterloo Records,shopping,"600 N Lamar Blvd, Austin, TX 78703",30.285,-97.742,
-s8,Sunshine Records,shopping,"E 6th St, Austin, TX 78702",30.265,-97.722,East side
-s9,Exploded Drawing Records,shopping,"E 6th St, Austin, TX 78702",30.265,-97.720,East side
-s10,Drinks Records,shopping,"E 6th St, Austin, TX 78702",30.265,-97.723,East side
-s11,BookPeople,shopping,"603 N Lamar Blvd, Austin, TX 78703",30.277,-97.750,Indie bookstore
-s12,Lighthouse Books,shopping,"E 6th St, Austin, TX 78702",30.265,-97.722,East side
-s13,Austin Books & Comics,shopping,"N Loop Blvd, Austin, TX 78751",30.318,-97.724,North Loop
-s14,Kinokuniya Bookstore,shopping,"The Domain, Austin, TX 78758",30.402,-97.725,The Domain area
-s15,Monkeywrench Books,shopping,"Red River St, Austin, TX 78701",30.270,-97.735,
-s16,Firstlight Books,shopping,"E 6th St, Austin, TX 78702",30.265,-97.720,East side
-s17,Livra Books,shopping,"E 6th St, Austin, TX 78702",30.265,-97.721,
-s18,Majestic Books,shopping,"Congress Ave, Austin, TX 78701",30.267,-97.740,
-s19,Half Price Books,shopping,"N Lamar Blvd, Austin, TX 78752",30.325,-97.730,N Lamar location
-m1,Parish,music,"Red River St, Austin, TX 78701",30.268,-97.738,
-m2,Mohawk,music,"912 Red River St, Austin, TX 78701",30.268,-97.737,Live music + bar
-m3,Elysium,music,"Red River St, Austin, TX 78701",30.268,-97.735,
-m4,13th Floor,music,"Red River St, Austin, TX 78701",30.268,-97.734,
-m5,Cheer Up Charlie's,music,"Red River St, Austin, TX 78701",30.269,-97.738,
-m6,Valhalla,music,"Red River St, Austin, TX 78701",30.268,-97.736,
-m7,Empire Control Room,music,"E 7th St, Austin, TX 78701",30.258,-97.740,
-m8,Stubb's BBQ,music,"801 Red River St, Austin, TX 78701",30.269,-97.736,
-m9,ACL Live / Moody Theater,music,"310 W Willie Nelson Blvd, Austin, TX 78701",30.261,-97.748,
-m10,Continental Club,music,"1315 S Congress Ave, Austin, TX 78704",30.249,-97.750,S Congress
-m11,Radio East,music,"E 6th St, Austin, TX 78702",30.265,-97.718,
-m12,Hotel Vegas / Volstead Lounge,music,"1502 E 6th St, Austin, TX 78702",30.264,-97.720,
-m13,White Horse,music,"500 Comal St, Austin, TX 78702",30.264,-97.719,
-m14,The Ballroom,music,"Red River St, Austin, TX 78701",30.268,-97.736,
-m15,Radio South,music,"S Congress Ave, Austin, TX 78704",30.248,-97.750,
-m16,Far Out Lounge,music,"S Congress Ave, Austin, TX 78745",30.230,-97.745,
-m17,Sagebrush,music,"S Congress Ave, Austin, TX 78704",30.248,-97.751,
-m18,Little Darlin's,music,"S 1st St, Austin, TX 78745",30.230,-97.740,
-m19,Moody Center,music,"2001 Robert Dedman Dr, Austin, TX 78712",30.282,-97.731,"Major arena, UT area"
-m20,Moody Amphitheater,music,"1401 Trinity St, Austin, TX 78701",30.264,-97.749,Waterloo Park
+s3,Guitar Center,shopping,"Burnet Rd, Austin, TX 78758",,,
+s4,End of an Ear,shopping,"S Congress Ave, Austin, TX 78704",,,"Record store, S Congress"
+s5,Breakaway Records,shopping,"N Loop Blvd, Austin, TX 78751",,,North Loop
+s6,Antone's Records,shopping,"Congress Ave, Austin, TX 78701",,,
+s7,Waterloo Records,shopping,"600 N Lamar Blvd, Austin, TX 78703",,,
+s8,Sunshine Records,shopping,"E 6th St, Austin, TX 78702",,,East side
+s9,Exploded Drawing Records,shopping,"E 6th St, Austin, TX 78702",,,East side
+s10,Drinks Records,shopping,"E 6th St, Austin, TX 78702",,,East side
+s11,BookPeople,shopping,"603 N Lamar Blvd, Austin, TX 78703",,,Indie bookstore
+s12,Lighthouse Books,shopping,"E 6th St, Austin, TX 78702",,,East side
+s13,Austin Books & Comics,shopping,"N Loop Blvd, Austin, TX 78751",,,North Loop
+s14,Kinokuniya Bookstore,shopping,"The Domain, Austin, TX 78758",,,The Domain area
+s15,Monkeywrench Books,shopping,"Red River St, Austin, TX 78701",,,
+s16,Firstlight Books,shopping,"E 6th St, Austin, TX 78702",,,East side
+s17,Livra Books,shopping,"E 6th St, Austin, TX 78702",,,
+s18,Majestic Books,shopping,"Congress Ave, Austin, TX 78701",,,
+s19,Half Price Books,shopping,"N Lamar Blvd, Austin, TX 78752",,,N Lamar location
+m1,Parish,music,"Red River St, Austin, TX 78701",,,
+m2,Mohawk,music,"912 Red River St, Austin, TX 78701",,,Live music + bar
+m3,Elysium,music,"Red River St, Austin, TX 78701",,,
+m4,13th Floor,music,"Red River St, Austin, TX 78701",,,
+m5,Cheer Up Charlie's,music,"Red River St, Austin, TX 78701",,,
+m6,Valhalla,music,"Red River St, Austin, TX 78701",,,
+m7,Empire Control Room,music,"E 7th St, Austin, TX 78701",,,
+m8,Stubb's BBQ,music,"801 Red River St, Austin, TX 78701",,,
+m9,ACL Live / Moody Theater,music,"310 W Willie Nelson Blvd, Austin, TX 78701",,,
+m10,Continental Club,music,"1315 S Congress Ave, Austin, TX 78704",,,S Congress
+m11,Radio East,music,"E 6th St, Austin, TX 78702",,,
+m12,Hotel Vegas / Volstead Lounge,music,"1502 E 6th St, Austin, TX 78702",,,
+m13,White Horse,music,"500 Comal St, Austin, TX 78702",,,
+m14,The Ballroom,music,"Red River St, Austin, TX 78701",,,
+m15,Radio South,music,"S Congress Ave, Austin, TX 78704",,,
+m16,Far Out Lounge,music,"S Congress Ave, Austin, TX 78745",,,
+m17,Sagebrush,music,"S Congress Ave, Austin, TX 78704",,,
+m18,Little Darlin's,music,"S 1st St, Austin, TX 78745",,,
+m19,Moody Center,music,"2001 Robert Dedman Dr, Austin, TX 78712",,,"Major arena, UT area"
+m20,Moody Amphitheater,music,"1401 Trinity St, Austin, TX 78701",,,Waterloo Park
 fe1,ACL Festival,festival,"Zilker Park, Austin, TX 78704",30.264,-97.775,Annual October music festival
 fe2,Levitation,festival,"Red River St, Austin, TX 78701",30.268,-97.737,Psych music festival
 fe3,Fantastic Fest,festival,"Alamo Drafthouse S Lamar, Austin, TX 78704",30.249,-97.775,Film festival at Alamo Drafthouse
@@ -96,28 +96,28 @@ fe7,Moon Tower Comedy,festival,"310 W Willie Nelson Blvd, Austin, TX 78701",30.2
 fe8,Austin Film Festival,festival,"Congress Ave, Austin, TX 78701",30.267,-97.743,
 fe9,Putt Putt Grand Open,festival,"E 6th St, Austin, TX 78702",30.265,-97.730,
 fe10,Fusebox,festival,"Congress Ave, Austin, TX 78701",30.267,-97.743,Performing arts festival
-h1,Austin Bouldering Project,fitness,"E 6th St, Austin, TX 78702",30.260,-97.720,
-h2,Black Swan Yoga,fitness,"E 6th St, Austin, TX 78702",30.267,-97.722,
+h1,Austin Bouldering Project,fitness,"E 6th St, Austin, TX 78702",,,
+h2,Black Swan Yoga,fitness,"E 6th St, Austin, TX 78702",,,
 h3,Float Tanks,fitness,"Austin, TX",30.270,-97.730,
-h4,Town Lake Running,fitness,"Lady Bird Lake Trail, Austin, TX 78701",30.262,-97.748,
+h4,Town Lake Running,fitness,"Lady Bird Lake Trail, Austin, TX 78701",,,
 h5,Critical Mass Bike Ride,fitness,"Congress Ave, Austin, TX 78701",30.267,-97.743,Monthly group ride
 h6,Yellow Bike Project,fitness,"Red River St, Austin, TX 78701",30.268,-97.735,Self bike repair
 h7,India's Warehouse,fitness,"E 6th St, Austin, TX 78702",30.265,-97.720,Aerial / ecstatic dance
-h8,People's Pharmacy,fitness,"Airport Blvd, Austin, TX 78751",30.310,-97.724,Health talks
-a1,Icosa,arts,"E 6th St, Austin, TX 78702",30.265,-97.722,Gallery (in Canopy)
-a2,Almost Real Things,arts,"E 6th St, Austin, TX 78702",30.265,-97.720,Gallery + community org
-a3,Canopy,arts,"E 6th St, Austin, TX 78702",30.265,-97.721,Arts complex
-a4,Museum of Human Achievement,arts,"Austin, TX 78723",30.280,-97.695,
-a5,Highland Collective,arts,"Airport Blvd, Austin, TX 78723",30.310,-97.706,
-a6,Bolm Studios,arts,"Bolm Rd, Austin, TX 78702",30.265,-97.710,
-a7,Dadalab,arts,"E 6th St, Austin, TX 78702",30.265,-97.719,Gallery + community org
-a8,Art Island,arts,"E 6th St, Austin, TX 78702",30.265,-97.717,
-a9,McLennon Pen Co. Gallery,arts,"N Loop Blvd, Austin, TX 78751",30.320,-97.724,
-a10,Laguna Gloria,arts,"3809 W 35th St, Austin, TX 78703",30.313,-97.778,Sculpture park on the water
-a11,Riches Contemporary,arts,"E 6th St, Austin, TX 78702",30.267,-97.720,
-a12,The Contemporary,arts,"Congress Ave, Austin, TX 78701",30.262,-97.740,
-a13,Martha's Contemporary,arts,"Congress Ave, Austin, TX 78701",30.267,-97.743,
-a14,Hyperreal,arts,"E 6th St, Austin, TX 78702",30.265,-97.721,Film club — screens indie films east side
+h8,People's Pharmacy,fitness,"Airport Blvd, Austin, TX 78751",,,Health talks
+a1,Icosa,arts,"E 6th St, Austin, TX 78702",,,Gallery (in Canopy)
+a2,Almost Real Things,arts,"E 6th St, Austin, TX 78702",,,Gallery + community org
+a3,Canopy,arts,"E 6th St, Austin, TX 78702",,,Arts complex
+a4,Museum of Human Achievement,arts,"Austin, TX 78723",,,
+a5,Highland Collective,arts,"Airport Blvd, Austin, TX 78723",,,
+a6,Bolm Studios,arts,"Bolm Rd, Austin, TX 78702",,,
+a7,Dadalab,arts,"E 6th St, Austin, TX 78702",,,Gallery + community org
+a8,Art Island,arts,"E 6th St, Austin, TX 78702",,,
+a9,McLennon Pen Co. Gallery,arts,"N Loop Blvd, Austin, TX 78751",,,
+a10,Laguna Gloria,arts,"3809 W 35th St, Austin, TX 78703",,,Sculpture park on the water
+a11,Riches Contemporary,arts,"E 6th St, Austin, TX 78702",,,
+a12,The Contemporary,arts,"Congress Ave, Austin, TX 78701",,,
+a13,Martha's Contemporary,arts,"Congress Ave, Austin, TX 78701",,,
+a14,Hyperreal,arts,"E 6th St, Austin, TX 78702",,,Film club — screens indie films east side
 a15,Flavored Channels,arts,"E 6th St, Austin, TX 78702",30.265,-97.722,Community org
-a16,Arthub,arts,"E 6th St, Austin, TX 78702",30.267,-97.720,Community org
+a16,Arthub,arts,"E 6th St, Austin, TX 78702",,,Community org
 a17,Exploded Drawing,arts,"E 6th St, Austin, TX 78702",30.265,-97.720,Community org
