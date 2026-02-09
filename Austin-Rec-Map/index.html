@@ -192,17 +192,25 @@
       padding: 12px 14px; font-size: 0.8rem; color: #666; text-align: center;
     }
 
-    /* My Location button */
-    .locate-btn {
+    /* Location bar (address search + GPS) */
+    .locate-bar {
       position: absolute; top: 62px; left: 284px; z-index: 1000;
+      display: flex; align-items: center; gap: 0;
       background: rgba(22, 33, 62, 0.95); border: 1px solid #0f3460;
-      border-radius: 8px; padding: 7px 12px; color: #eee;
-      cursor: pointer; font-size: 0.82rem; font-family: inherit;
-      font-weight: 600; transition: background 0.2s;
-      display: flex; align-items: center; gap: 6px;
+      border-radius: 8px; overflow: hidden;
     }
-    .locate-btn:hover { background: rgba(15, 52, 96, 0.95); }
-    .locate-btn svg { flex-shrink: 0; }
+    .locate-bar input {
+      padding: 8px 12px; border: none; background: transparent; color: #eee;
+      font-size: 0.82rem; font-family: inherit; width: 200px; outline: none;
+    }
+    .locate-bar input::placeholder { color: #666; }
+    .locate-gps {
+      background: none; border: none; border-left: 1px solid #0f3460;
+      color: #aaa; cursor: pointer; padding: 7px 10px;
+      display: flex; align-items: center; transition: color 0.2s, background 0.2s;
+    }
+    .locate-gps:hover { color: #60a5fa; background: rgba(255,255,255,0.05); }
+    .locate-gps svg { flex-shrink: 0; }
     .user-loc-dot {
       width: 14px; height: 14px; border-radius: 50%;
       background: radial-gradient(circle at 40% 35%, #60a5fa, #2563eb);
@@ -236,11 +244,13 @@
     <div class="places-body" id="places-body"></div>
   </div>
 
-  <!-- My Location -->
-  <button class="locate-btn" id="locate-btn" onclick="goToMyLocation()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
-    My Location
-  </button>
+  <!-- Location bar (address search + GPS) -->
+  <div class="locate-bar">
+    <input type="text" id="locate-input" placeholder="Search address or use GPS →" />
+    <button class="locate-gps" id="locate-gps" onclick="goToMyLocation()" title="Use my GPS location">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    </button>
+  </div>
 
   <div class="legend" id="legend"></div>
   <div class="toast" id="toast">Click anywhere on the map to add a pin — or use + Add by Address</div>
@@ -779,39 +789,98 @@
     // Update sidebar when map moves (debounced to avoid thrash during flyTo)
     map.on('moveend', debounce(updatePlacesList, 150));
 
-    // ── My Location ──
+    // ── Location (address search + GPS) ──
     let userLocationMarker = null;
 
+    // Generate a GeoJSON circle polygon (~20 min walk = ~1600m)
+    function walkRadiusCircle(center, radiusMeters) {
+      const [lng, lat] = center;
+      const R = 6371000;
+      const coords = [];
+      for (let i = 0; i <= 64; i++) {
+        const a = (i / 64) * 2 * Math.PI;
+        const dLat = (radiusMeters / R) * Math.cos(a) * (180 / Math.PI);
+        const dLng = (radiusMeters / (R * Math.cos(lat * Math.PI / 180))) * Math.sin(a) * (180 / Math.PI);
+        coords.push([lng + dLng, lat + dLat]);
+      }
+      return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [coords] } };
+    }
+
+    // Shared: place dot + walk radius at a given location
+    function setLocationOnMap(lng, lat) {
+      if (userLocationMarker) userLocationMarker.remove();
+      const dot = document.createElement('div');
+      dot.className = 'user-loc-dot';
+      userLocationMarker = new maplibregl.Marker({ element: dot, anchor: 'center' })
+        .setLngLat([lng, lat]).addTo(map);
+
+      const circle = walkRadiusCircle([lng, lat], 1600);
+      if (map.getSource('walk-radius')) {
+        map.getSource('walk-radius').setData(circle);
+      } else {
+        map.addSource('walk-radius', { type: 'geojson', data: circle });
+        map.addLayer({
+          id: 'walk-radius-fill',
+          type: 'fill',
+          source: 'walk-radius',
+          paint: { 'fill-color': '#2563eb', 'fill-opacity': 0.08 }
+        }, 'markers-layer');
+        map.addLayer({
+          id: 'walk-radius-line',
+          type: 'line',
+          source: 'walk-radius',
+          paint: { 'line-color': '#60a5fa', 'line-width': 2, 'line-opacity': 0.5, 'line-dasharray': [3, 2] }
+        }, 'markers-layer');
+      }
+
+      map.flyTo({ center: [lng, lat], zoom: 14, duration: 1200 });
+    }
+
+    // GPS button
     function goToMyLocation() {
-      const btn = document.getElementById('locate-btn');
-      const resetBtn = () => { btn.innerHTML = LOCATE_SVG + ' My Location'; btn.disabled = false; };
-      btn.textContent = 'Locating...';
+      const btn = document.getElementById('locate-gps');
       btn.disabled = true;
+      btn.style.opacity = '0.5';
+      const reset = () => { btn.disabled = false; btn.style.opacity = ''; };
 
       if (!navigator.geolocation) {
         alert('Geolocation is not supported by your browser.');
-        resetBtn();
+        reset();
         return;
       }
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const { latitude, longitude } = pos.coords;
-          if (userLocationMarker) userLocationMarker.remove();
-          const dot = document.createElement('div');
-          dot.className = 'user-loc-dot';
-          userLocationMarker = new maplibregl.Marker({ element: dot, anchor: 'center' })
-            .setLngLat([longitude, latitude]).addTo(map);
-          map.flyTo({ center: [longitude, latitude], zoom: 15, duration: 1200 });
-          resetBtn();
+          setLocationOnMap(pos.coords.longitude, pos.coords.latitude);
+          document.getElementById('locate-input').value = '';
+          reset();
         },
         () => {
           alert('Could not get your location. Make sure location access is enabled.');
-          resetBtn();
+          reset();
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     }
+
+    // Address search (Enter key)
+    document.getElementById('locate-input').addEventListener('keydown', async (e) => {
+      if (e.key !== 'Enter') return;
+      const address = e.target.value.trim();
+      if (!address) return;
+
+      e.target.disabled = true;
+      e.target.placeholder = 'Searching...';
+      const result = await geocodeAddress(address);
+      e.target.disabled = false;
+      e.target.placeholder = 'Search address or use GPS →';
+
+      if (result) {
+        setLocationOnMap(result.lng, result.lat);
+      } else {
+        alert('Could not find that address. Try a more specific address.');
+      }
+    });
 
     // ── Search (debounced — avoids re-rendering 120+ markers on every keystroke) ──
     document.getElementById('search').addEventListener('input', debounce((e) => {
