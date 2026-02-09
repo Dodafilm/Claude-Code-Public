@@ -365,7 +365,9 @@
       ctx.fillStyle = 'rgba(255,255,255,0.3)';
       ctx.fill();
 
-      return canvas;
+      // Return {width, height, data} format for MapLibre addImage
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      return { width: canvas.width, height: canvas.height, data: new Uint8Array(imgData.data.buffer) };
     }
 
     // ── State ──
