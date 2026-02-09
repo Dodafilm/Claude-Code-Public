@@ -146,6 +146,70 @@
     }
     .search-box input::placeholder { color: #666; }
 
+    /* Places Sidebar */
+    .places-panel {
+      position: absolute; top: 62px; left: 12px; z-index: 1000;
+      background: rgba(22, 33, 62, 0.95); border-radius: 10px;
+      border: 1px solid #0f3460; width: 260px;
+      max-height: calc(100vh - 170px); display: flex; flex-direction: column;
+    }
+    .places-header {
+      padding: 10px 14px 8px; border-bottom: 1px solid #0f3460;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .places-header h3 {
+      font-size: 0.75rem; color: #aaa; text-transform: uppercase;
+      letter-spacing: 1px; margin: 0;
+    }
+    .places-toggle {
+      background: none; border: none; color: #aaa; cursor: pointer;
+      font-size: 1rem; padding: 0 4px; transition: transform 0.2s;
+    }
+    .places-toggle.collapsed { transform: rotate(180deg); }
+    .places-body {
+      overflow-y: auto; padding: 6px 0; flex: 1;
+    }
+    .places-body.collapsed { display: none; }
+    .places-cat-header {
+      padding: 6px 14px 3px; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .places-cat-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .places-item {
+      padding: 4px 14px 4px 28px; font-size: 0.8rem; cursor: pointer;
+      transition: background 0.15s; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .places-item:hover { background: rgba(255,255,255,0.07); }
+    .places-item-notes {
+      font-size: 0.68rem; color: #888; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .places-empty {
+      padding: 12px 14px; font-size: 0.8rem; color: #666; text-align: center;
+    }
+
+    /* My Location button */
+    .locate-btn {
+      position: absolute; top: 62px; left: 284px; z-index: 1000;
+      background: rgba(22, 33, 62, 0.95); border: 1px solid #0f3460;
+      border-radius: 8px; padding: 7px 12px; color: #eee;
+      cursor: pointer; font-size: 0.82rem; font-family: inherit;
+      font-weight: 600; transition: background 0.2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .locate-btn:hover { background: rgba(15, 52, 96, 0.95); }
+    .locate-btn svg { flex-shrink: 0; }
+    .user-loc-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #60a5fa, #2563eb);
+      border: 2.5px solid #fff;
+      box-shadow: 0 0 10px rgba(37,99,235,0.6);
+    }
+
     /* 3D Pin Marker Styles */
     .marker-pin {
       cursor: pointer;
@@ -179,6 +243,22 @@
 
   <div id="map"></div>
   <div class="search-box"><input type="text" id="search" placeholder="Search pins..." /></div>
+
+  <!-- Places sidebar -->
+  <div class="places-panel" id="places-panel">
+    <div class="places-header">
+      <h3>Visible Places</h3>
+      <button class="places-toggle" id="places-toggle" onclick="togglePlacesPanel()" title="Collapse">&#9650;</button>
+    </div>
+    <div class="places-body" id="places-body"></div>
+  </div>
+
+  <!-- My Location -->
+  <button class="locate-btn" id="locate-btn" onclick="goToMyLocation()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    My Location
+  </button>
+
   <div class="legend" id="legend"></div>
   <div class="toast" id="toast">Click anywhere on the map to add a pin — or use + Add by Address</div>
 
@@ -539,10 +619,13 @@
     buildCategoryButtons('edit-category-grid', id => { editCategory = id; });
 
     // ── Render Markers (3D pin teardrops) ──
+    let visibleRecs = []; // track what's currently rendered for the sidebar
+
     function renderMarkers() {
       // Remove existing markers
       activeMarkers.forEach(m => m.remove());
       activeMarkers = [];
+      visibleRecs = [];
       pinCounter = 0;
       buildLegend();
 
@@ -581,7 +664,114 @@
           .addTo(map);
 
         activeMarkers.push(marker);
+        visibleRecs.push(rec);
       });
+
+      updatePlacesList();
+    }
+
+    // ── Places Sidebar ──
+    function updatePlacesList() {
+      const body = document.getElementById('places-body');
+      if (!body) return;
+
+      // Get map bounds to filter to visible pins
+      const bounds = map.getBounds();
+      const inView = visibleRecs.filter(r =>
+        r.lat >= bounds.getSouth() && r.lat <= bounds.getNorth() &&
+        r.lng >= bounds.getWest() && r.lng <= bounds.getEast()
+      );
+
+      if (inView.length === 0) {
+        body.innerHTML = '<div class="places-empty">No places in view</div>';
+        return;
+      }
+
+      // Group by category
+      const groups = {};
+      inView.forEach(rec => {
+        if (!groups[rec.category]) groups[rec.category] = [];
+        groups[rec.category].push(rec);
+      });
+
+      // Build HTML in category order
+      let html = '';
+      CATEGORIES.forEach(cat => {
+        const recs = groups[cat.id];
+        if (!recs || recs.length === 0) return;
+        html += `<div class="places-cat-header" style="color:${cat.color}">
+          <div class="places-cat-dot" style="background:${cat.color}"></div>
+          ${cat.label} (${recs.length})
+        </div>`;
+        recs.sort((a, b) => a.name.localeCompare(b.name)).forEach(rec => {
+          html += `<div class="places-item" onclick="flyToPlace('${rec.id}')" title="${rec.notes || ''}">
+            ${rec.name}
+            ${rec.notes ? `<div class="places-item-notes">${rec.notes}</div>` : ''}
+          </div>`;
+        });
+      });
+
+      body.innerHTML = html;
+    }
+
+    function flyToPlace(id) {
+      const rec = recommendations.find(r => r.id === id);
+      if (!rec) return;
+      map.flyTo({ center: [rec.lng, rec.lat], zoom: 16, duration: 800 });
+    }
+
+    function togglePlacesPanel() {
+      const body = document.getElementById('places-body');
+      const btn = document.getElementById('places-toggle');
+      body.classList.toggle('collapsed');
+      btn.classList.toggle('collapsed');
+    }
+
+    // Update sidebar when map moves
+    map.on('moveend', updatePlacesList);
+
+    // ── My Location ──
+    let userLocationMarker = null;
+
+    function goToMyLocation() {
+      const btn = document.getElementById('locate-btn');
+      btn.textContent = 'Locating...';
+      btn.disabled = true;
+
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> My Location`;
+        btn.disabled = false;
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+
+          // Remove old location marker
+          if (userLocationMarker) userLocationMarker.remove();
+
+          // Add blue dot for user location
+          const dot = document.createElement('div');
+          dot.className = 'user-loc-dot';
+          userLocationMarker = new maplibregl.Marker({ element: dot, anchor: 'center' })
+            .setLngLat([longitude, latitude])
+            .addTo(map);
+
+          // Fly to location
+          map.flyTo({ center: [longitude, latitude], zoom: 15, duration: 1200 });
+
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> My Location`;
+          btn.disabled = false;
+        },
+        (err) => {
+          alert('Could not get your location. Make sure location access is enabled.');
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> My Location`;
+          btn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
     }
 
     // ── Search ──
