@@ -45,26 +45,38 @@
 
     #map { flex: 1; z-index: 1; }
 
-    /* Legend / Filter Panel */
-    .legend {
-      position: absolute; bottom: 30px; left: 12px;
-      background: rgba(22, 33, 62, 0.95); border-radius: 10px;
-      padding: 12px 16px; z-index: 1000; border: 1px solid #0f3460;
-      max-width: 220px; max-height: 70vh; overflow-y: auto;
+    /* Filter section (inside sidebar) */
+    .legend-section {
+      padding: 10px 14px; border-bottom: 1px solid #0f3460; flex-shrink: 0;
     }
-    .legend h3 {
-      font-size: 0.75rem; margin-bottom: 8px; color: #aaa;
+    .legend-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none;
+    }
+    .legend-section-header h3 {
+      font-size: 0.75rem; margin: 0; color: #aaa;
       text-transform: uppercase; letter-spacing: 1px;
     }
-    .legend-item {
-      display: flex; align-items: center; gap: 8px;
-      margin-bottom: 5px; font-size: 0.82rem; cursor: pointer;
-      user-select: none; transition: opacity 0.2s;
+    .legend-section-toggle {
+      background: none; border: none; color: #aaa; cursor: pointer;
+      font-size: 0.75rem; padding: 0 2px; transition: transform 0.2s;
     }
+    .legend-section-toggle.collapsed { transform: rotate(180deg); }
+    .legend-grid {
+      display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+    }
+    .legend-grid.collapsed { display: none; }
+    .legend-item {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 6px; font-size: 0.72rem;
+      cursor: pointer; user-select: none; transition: opacity 0.2s;
+      background: rgba(255,255,255,0.05);
+    }
+    .legend-item:hover { background: rgba(255,255,255,0.1); }
     .legend-item.disabled { opacity: 0.35; }
     .legend-dot {
-      width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
-      border: 2px solid rgba(255,255,255,0.3);
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      border: 1.5px solid rgba(255,255,255,0.3);
     }
 
     /* Modal */
@@ -146,16 +158,17 @@
     }
     .search-box input::placeholder { color: #666; }
 
-    /* Places Sidebar */
-    .places-panel {
+    /* Sidebar Panel */
+    .sidebar-panel {
       position: absolute; top: 62px; left: 12px; z-index: 1000;
       background: rgba(22, 33, 62, 0.95); border-radius: 10px;
       border: 1px solid #0f3460; width: 260px;
-      max-height: calc(100vh - 170px); display: flex; flex-direction: column;
+      max-height: calc(100vh - 80px); display: flex; flex-direction: column;
     }
     .places-header {
       padding: 10px 14px 8px; border-bottom: 1px solid #0f3460;
       display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
     }
     .places-header h3 {
       font-size: 0.75rem; color: #aaa; text-transform: uppercase;
@@ -166,18 +179,27 @@
       font-size: 1rem; padding: 0 4px; transition: transform 0.2s;
     }
     .places-toggle.collapsed { transform: rotate(180deg); }
+    .sidebar-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .sidebar-content.collapsed { display: none; }
     .places-body {
       overflow-y: auto; padding: 6px 0; flex: 1;
     }
-    .places-body.collapsed { display: none; }
     .places-cat-header {
       padding: 6px 14px 3px; font-size: 0.7rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.8px;
       display: flex; align-items: center; gap: 6px;
+      cursor: pointer; user-select: none;
     }
+    .places-cat-header:hover { background: rgba(255,255,255,0.04); }
+    .places-cat-chevron {
+      margin-left: auto; font-size: 0.6rem; transition: transform 0.2s; color: #666;
+    }
+    .places-cat-chevron.collapsed { transform: rotate(-90deg); }
     .places-cat-dot {
       width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
     }
+    .places-cat-items { }
+    .places-cat-items.collapsed { display: none; }
     .places-item {
       padding: 4px 14px 4px 28px; font-size: 0.8rem; cursor: pointer;
       transition: background 0.15s; white-space: nowrap;
@@ -235,13 +257,22 @@
   <div id="map"></div>
   <div class="search-box"><input type="text" id="search" placeholder="Search pins..." /></div>
 
-  <!-- Places sidebar -->
-  <div class="places-panel" id="places-panel">
+  <!-- Sidebar: filters + places -->
+  <div class="sidebar-panel" id="sidebar-panel">
     <div class="places-header">
-      <h3>Visible Places</h3>
+      <h3>Austin Recs</h3>
       <button class="places-toggle" id="places-toggle" onclick="togglePlacesPanel()" title="Collapse">&#9650;</button>
     </div>
-    <div class="places-body" id="places-body"></div>
+    <div class="sidebar-content" id="sidebar-content">
+      <div class="legend-section">
+        <div class="legend-section-header" onclick="toggleFilterSection()">
+          <h3>Filter Categories</h3>
+          <button class="legend-section-toggle" id="legend-toggle">&#9650;</button>
+        </div>
+        <div class="legend-grid" id="legend"></div>
+      </div>
+      <div class="places-body" id="places-body"></div>
+    </div>
   </div>
 
   <!-- Location bar (address search + GPS) -->
@@ -252,7 +283,6 @@
     </button>
   </div>
 
-  <div class="legend" id="legend"></div>
   <div class="toast" id="toast">Click anywhere on the map to add a pin — or use + Add by Address</div>
 
   <!-- Add Modal -->
@@ -657,13 +687,20 @@
       if (key === _lastLegendKey) return;
       _lastLegendKey = key;
       const el = document.getElementById('legend');
-      el.innerHTML = '<h3>Filter Categories</h3>' + CATEGORIES.filter(c => activeCats.has(c.id)).map(c => {
+      el.innerHTML = CATEGORIES.filter(c => activeCats.has(c.id)).map(c => {
         const disabled = hiddenCategories.has(c.id) ? ' disabled' : '';
-        return `<div class="legend-item${disabled}" data-cat="${c.id}" onclick="toggleCategory('${c.id}')">
+        return `<div class="legend-item${disabled}" onclick="toggleCategory('${c.id}')">
           <div class="legend-dot" style="background:${c.color}"></div>
           ${c.label}
         </div>`;
       }).join('');
+    }
+
+    function toggleFilterSection() {
+      const grid = document.getElementById('legend');
+      const btn = document.getElementById('legend-toggle');
+      grid.classList.toggle('collapsed');
+      btn.classList.toggle('collapsed');
     }
 
     function toggleCategory(id) {
@@ -754,21 +791,25 @@
         groups[rec.category].push(rec);
       });
 
-      // Build HTML in category order
+      // Build HTML in category order (collapsible)
       let html = '';
       CATEGORIES.forEach(cat => {
         const recs = groups[cat.id];
         if (!recs || recs.length === 0) return;
-        html += `<div class="places-cat-header" style="color:${cat.color}">
+        const collapsed = _collapsedPlacesCats.has(cat.id);
+        html += `<div class="places-cat-header" style="color:${cat.color}" onclick="togglePlacesCat('${cat.id}')">
           <div class="places-cat-dot" style="background:${cat.color}"></div>
           ${cat.label} (${recs.length})
+          <span class="places-cat-chevron${collapsed ? ' collapsed' : ''}">&#9660;</span>
         </div>`;
+        html += `<div class="places-cat-items${collapsed ? ' collapsed' : ''}">`;
         recs.sort((a, b) => a.name.localeCompare(b.name)).forEach(rec => {
           html += `<div class="places-item" onclick="flyToPlace('${rec.id}')" title="${rec.notes || ''}">
             ${rec.name}
             ${rec.notes ? `<div class="places-item-notes">${rec.notes}</div>` : ''}
           </div>`;
         });
+        html += `</div>`;
       });
 
       body.innerHTML = html;
@@ -780,10 +821,18 @@
       map.flyTo({ center: [rec.lng, rec.lat], zoom: 16, duration: 800 });
     }
 
+    const _collapsedPlacesCats = new Set();
+
+    function togglePlacesCat(catId) {
+      if (_collapsedPlacesCats.has(catId)) _collapsedPlacesCats.delete(catId);
+      else _collapsedPlacesCats.add(catId);
+      updatePlacesList();
+    }
+
     function togglePlacesPanel() {
-      const body = document.getElementById('places-body');
+      const content = document.getElementById('sidebar-content');
       const btn = document.getElementById('places-toggle');
-      body.classList.toggle('collapsed');
+      content.classList.toggle('collapsed');
       btn.classList.toggle('collapsed');
     }
 
