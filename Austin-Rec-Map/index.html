@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Austin Rec Map</title>
+  <title>Psychojelly Recommendation Map</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -31,8 +31,6 @@
 
     header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
     header h1 span { color: #e94560; }
-
-    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .btn {
       padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer;
@@ -146,7 +144,7 @@
       font-size: 0.9rem; color: #ccc; pointer-events: none; transition: opacity 0.5s;
     }
 
-    #import-file { display: none; }
+
 
     .search-box {
       position: absolute; top: 62px; right: 54px; z-index: 1000;
@@ -244,14 +242,7 @@
 </head>
 <body>
   <header>
-    <h1><span>Austin</span> Rec Map</h1>
-    <div class="header-actions">
-      <button class="btn btn-primary" onclick="openAddByAddress()">+ Add by Address</button>
-      <button class="btn btn-primary" onclick="document.getElementById('import-file').click()">Import CSV</button>
-      <input type="file" id="import-file" accept=".csv,.json" />
-      <button class="btn btn-primary" onclick="exportCSV()">Export CSV</button>
-      <button class="btn btn-danger" onclick="resetToFile()">Reload CSV</button>
-    </div>
+    <h1><span>Psychojelly</span> Recommendation Map</h1>
   </header>
 
   <div id="map"></div>
@@ -260,7 +251,7 @@
   <!-- Sidebar: filters + places -->
   <div class="sidebar-panel" id="sidebar-panel">
     <div class="places-header">
-      <h3>Austin Recs</h3>
+      <h3>Places</h3>
       <button class="places-toggle" id="places-toggle" onclick="togglePlacesPanel()" title="Collapse">&#9650;</button>
     </div>
     <div class="sidebar-content" id="sidebar-content">
@@ -283,27 +274,7 @@
     </button>
   </div>
 
-  <div class="toast" id="toast">Click anywhere on the map to add a pin — or use + Add by Address</div>
-
-  <!-- Add Modal -->
-  <div class="modal-overlay" id="add-modal">
-    <div class="modal">
-      <h2>Add Recommendation</h2>
-      <label>Name</label>
-      <input type="text" id="rec-name" placeholder="e.g. Barton Springs Pool" />
-      <label>Address</label>
-      <input type="text" id="rec-address" placeholder="e.g. 1619 E 6th St, Austin, TX" />
-      <p class="hint" id="add-location-hint"></p>
-      <label>Category</label>
-      <div class="category-grid" id="category-grid"></div>
-      <label>Notes</label>
-      <textarea id="rec-notes" placeholder="What makes it great?"></textarea>
-      <div class="modal-actions">
-        <button class="btn btn-cancel" onclick="closeModal('add-modal')">Cancel</button>
-        <button class="btn btn-save" id="add-save-btn" onclick="saveMarker()">Save</button>
-      </div>
-    </div>
-  </div>
+  <div class="toast" id="toast"></div>
 
   <!-- Edit Modal -->
   <div class="modal-overlay" id="edit-modal">
@@ -412,8 +383,6 @@
 
     // ── State ──
     let recommendations = [];
-    let pendingLatLng = null;
-    let selectedCategory = null;
     let editingId = null;
     let editCategory = null;
     let markerClicked = false;
@@ -457,7 +426,6 @@
           await new Promise(resolve => setTimeout(resolve, 1100));
         }
       }
-      save();
       renderMarkers();
       showToastMsg('Geocoding complete!');
     }
@@ -480,36 +448,13 @@
       })).filter(r => r.name && ((!isNaN(r.lat) && !isNaN(r.lng)) || r.address));
     }
 
-    function toCSVText(data) {
-      return Papa.unparse(data.map(r => ({
-        id: r.id,
-        name: r.name,
-        category: r.category,
-        address: r.address || '',
-        lat: r.lat,
-        lng: r.lng,
-        notes: r.notes || '',
-      })), { columns: ['id','name','category','address','lat','lng','notes'] });
-    }
-
-    // ── Load data: localStorage first, then fetch data.csv ──
+    // ── Load data from CSV on every startup ──
     async function loadData() {
-      const cached = localStorage.getItem('austin-recs-v3');
-      if (cached) {
-        recommendations = JSON.parse(cached);
-        renderMarkers();
-        return;
-      }
-      await loadFromCSVFile();
-    }
-
-    async function loadFromCSVFile() {
       try {
         const resp = await fetch('data.csv?t=' + Date.now());
         if (!resp.ok) throw new Error('No CSV found');
         const text = await resp.text();
         recommendations = parseCSVText(text);
-        save();
         renderMarkers();
         await geocodeMissing(recommendations);
       } catch (e) {
@@ -517,11 +462,6 @@
         recommendations = [];
         renderMarkers();
       }
-    }
-
-    // ── Persistence ──
-    function save() {
-      localStorage.setItem('austin-recs-v3', JSON.stringify(recommendations));
     }
 
     // ── Map (MapLibre GL with 3D) ──
@@ -732,7 +672,6 @@
         container.appendChild(btn);
       });
     }
-    buildCategoryButtons('category-grid', id => { selectedCategory = id; });
     buildCategoryButtons('edit-category-grid', id => { editCategory = id; });
 
     // ── Render Markers (WebGL symbol layer — no DOM desync) ──
@@ -940,74 +879,9 @@
       renderMarkers();
     }, 200));
 
-    // ── Map Click → Add ──
-    map.on('click', (e) => {
-      if (markerClicked) { markerClicked = false; return; }
-      pendingLatLng = { lat: e.lngLat.lat, lng: e.lngLat.lng };
-      selectedCategory = null;
-      document.getElementById('rec-name').value = '';
-      document.getElementById('rec-address').value = '';
-      document.getElementById('rec-notes').value = '';
-      document.getElementById('add-location-hint').textContent = 'Pin placed at clicked location. Address is optional (for display).';
-      document.querySelectorAll('#category-grid .category-btn').forEach(b => b.classList.remove('selected'));
-      document.getElementById('add-modal').classList.add('active');
-      setTimeout(() => document.getElementById('rec-name').focus(), 100);
-    });
-
-    // ── Add by Address ──
-    function openAddByAddress() {
-      pendingLatLng = null;
-      selectedCategory = null;
-      document.getElementById('rec-name').value = '';
-      document.getElementById('rec-address').value = '';
-      document.getElementById('rec-notes').value = '';
-      document.getElementById('add-location-hint').textContent = 'Address will be geocoded to place the pin on the map.';
-      document.querySelectorAll('#category-grid .category-btn').forEach(b => b.classList.remove('selected'));
-      document.getElementById('add-modal').classList.add('active');
-      setTimeout(() => document.getElementById('rec-address').focus(), 100);
-    }
-
     function closeModal(id) {
       document.getElementById(id).classList.remove('active');
-      if (id === 'add-modal') pendingLatLng = null;
       if (id === 'edit-modal') editingId = null;
-    }
-
-    async function saveMarker() {
-      const name = document.getElementById('rec-name').value.trim();
-      const address = document.getElementById('rec-address').value.trim();
-      if (!name) { alert('Please enter a name.'); return; }
-      if (!selectedCategory) { alert('Please pick a category.'); return; }
-
-      let lat, lng;
-      if (pendingLatLng) {
-        lat = pendingLatLng.lat;
-        lng = pendingLatLng.lng;
-      } else if (address) {
-        const btn = document.getElementById('add-save-btn');
-        btn.textContent = 'Geocoding...';
-        btn.disabled = true;
-        const result = await geocodeAddress(address);
-        btn.textContent = 'Save';
-        btn.disabled = false;
-        if (!result) {
-          alert('Could not geocode that address. Try a more specific address, or add the pin by clicking the map.');
-          return;
-        }
-        lat = result.lat;
-        lng = result.lng;
-      } else {
-        alert('Please enter an address, or close this and click the map to place a pin.');
-        return;
-      }
-
-      recommendations.push({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        name, category: selectedCategory, address,
-        notes: document.getElementById('rec-notes').value.trim(),
-        lat, lng,
-      });
-      save(); renderMarkers(); closeModal('add-modal');
     }
 
     // ── Edit ──
@@ -1050,61 +924,19 @@
       rec.address = address;
       rec.category = editCategory;
       rec.notes = document.getElementById('edit-notes').value.trim();
-      save(); renderMarkers(); closeModal('edit-modal');
+      renderMarkers(); closeModal('edit-modal');
     }
 
     function deleteMarker() {
       if (!confirm('Delete this recommendation?')) return;
       recommendations = recommendations.filter(r => r.id !== editingId);
-      save(); renderMarkers(); closeModal('edit-modal');
-    }
-
-    // ── Export CSV ──
-    function exportCSV() {
-      const csv = toCSVText(recommendations);
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'data.csv';
-      a.click();
-    }
-
-    // ── Import CSV ──
-    document.getElementById('import-file').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        try {
-          const text = ev.target.result;
-          if (file.name.endsWith('.json')) {
-            const data = JSON.parse(text);
-            if (Array.isArray(data)) recommendations = data;
-          } else {
-            recommendations = parseCSVText(text);
-          }
-          save(); renderMarkers();
-          await geocodeMissing(recommendations);
-        } catch { alert('Could not parse file.'); }
-      };
-      reader.readAsText(file);
-      e.target.value = '';
-    });
-
-    // ── Reload from data.csv ──
-    function resetToFile() {
-      if (!confirm('Reload from data.csv? This will discard any pins you added in the browser.')) return;
-      localStorage.removeItem('austin-recs-v3');
-      loadFromCSVFile();
+      renderMarkers(); closeModal('edit-modal');
     }
 
     // ── Keyboard ──
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { closeModal('add-modal'); closeModal('edit-modal'); }
+      if (e.key === 'Escape') { closeModal('edit-modal'); }
     });
-
-    // ── Toast auto-hide ──
-    setTimeout(() => { document.getElementById('toast').style.opacity = '0'; }, 5000);
   </script>
 </body>
 </html>
