@@ -558,7 +558,7 @@
         }, labelLayerId);
       }
 
-      // Terrain (elevation)
+      // Terrain (elevation + hillshade)
       map.addSource('terrain-dem', {
         type: 'raster-dem',
         tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
@@ -566,7 +566,21 @@
         tileSize: 256,
         maxzoom: 15,
       });
-      map.setTerrain({ source: 'terrain-dem', exaggeration: 1.5 });
+      map.setTerrain({ source: 'terrain-dem', exaggeration: 3 });
+
+      // Hillshade layer to visually emphasize terrain
+      map.addLayer({
+        id: 'hillshade',
+        type: 'hillshade',
+        source: 'terrain-dem',
+        paint: {
+          'hillshade-exaggeration': 0.6,
+          'hillshade-shadow-color': '#000020',
+          'hillshade-highlight-color': '#ffffff',
+          'hillshade-illumination-direction': 315,
+          'hillshade-accent-color': '#1a1a3e',
+        }
+      }, '3d-buildings');
 
       // Register pin images for each category (rendered via Canvas for WebGL)
       CATEGORIES.forEach(c => {
