@@ -19,7 +19,8 @@
       "Bash(powershell:*)",
       "Bash(python3:*)",
       "Bash(node:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebSearch"
     ]
   }
 }

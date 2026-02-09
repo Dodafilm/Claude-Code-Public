@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Austin Rec Map</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -326,7 +326,7 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
     // ── Categories ──
@@ -537,7 +537,6 @@
       touchZoomRotate: true,
       touchPitch: true,
       maxPitch: 70,
-      projection: 'globe',
     });
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }), 'top-right');
@@ -551,8 +550,11 @@
     });
 
 
-    // ── 3D Buildings + Terrain (after style loads) ──
+    // ── 3D Buildings + Terrain + Globe (after style loads) ──
     map.on('load', () => {
+      // Globe projection (v5+) — renders as sphere when zoomed out
+      map.setProjection({ type: 'globe' });
+
       const style = map.getStyle();
 
       // Find the vector tile source from CARTO style
