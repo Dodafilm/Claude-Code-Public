@@ -210,23 +210,6 @@
       box-shadow: 0 0 10px rgba(37,99,235,0.6);
     }
 
-    /* 3D Pin Marker Styles */
-    .marker-pin {
-      cursor: pointer;
-      line-height: 0;
-      transition: transform 0.2s ease, filter 0.2s ease;
-    }
-    .marker-pin:hover {
-      transform: scale(1.35) translateY(-5px);
-      filter: brightness(1.25);
-      z-index: 100 !important;
-    }
-    .marker-pin-hood {
-      opacity: 0.5;
-    }
-    .marker-pin-hood:hover {
-      opacity: 0.85;
-    }
   </style>
 </head>
 <body>
@@ -341,23 +324,49 @@
       let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
     }
 
-    // O(1) category lookup + pre-built gradient SVG defs (shared across all markers)
+    // O(1) category lookup
     const CAT_MAP = new Map(CATEGORIES.map(c => [c.id, c]));
     const LOCATE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>';
 
-    // Inject a single hidden SVG with shared gradient defs — eliminates per-marker <defs>
-    (() => {
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
-      svg.setAttribute('aria-hidden', 'true');
-      svg.innerHTML = '<defs>' + CATEGORIES.map(c => {
-        const l = lightenColor(c.color, 55), d = darkenColor(c.color, 40);
-        return `<radialGradient id="pin-${c.id}" cx="38%" cy="28%" r="60%">` +
-          `<stop offset="0%" stop-color="${l}"/><stop offset="50%" stop-color="${c.color}"/>` +
-          `<stop offset="100%" stop-color="${d}"/></radialGradient>`;
-      }).join('') + '</defs>';
-      document.body.appendChild(svg);
-    })();
+    // ── Canvas Pin Factory (renders pin images for WebGL symbol layer) ──
+    function createPinCanvas(color) {
+      const scale = 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = 28 * scale;
+      canvas.height = 40 * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+
+      // Pin shape
+      ctx.beginPath();
+      ctx.moveTo(14, 0);
+      ctx.bezierCurveTo(6.3, 0, 0, 6.3, 0, 14);
+      ctx.bezierCurveTo(0, 24.5, 14, 40, 14, 40);
+      ctx.bezierCurveTo(14, 40, 28, 24.5, 28, 14);
+      ctx.bezierCurveTo(28, 6.3, 21.7, 0, 14, 0);
+      ctx.closePath();
+
+      // Radial gradient (cx=38%, cy=28%, r=60% of viewBox)
+      const grad = ctx.createRadialGradient(10.64, 11.2, 0, 14, 14, 16.8);
+      grad.addColorStop(0, lightenColor(color, 55));
+      grad.addColorStop(0.5, color);
+      grad.addColorStop(1, darkenColor(color, 40));
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Stroke
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Highlight ellipse
+      ctx.beginPath();
+      ctx.ellipse(10.5, 10, 5, 3.5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fill();
+
+      return canvas;
+    }
 
     // ── State ──
     let recommendations = [];
@@ -365,7 +374,7 @@
     let selectedCategory = null;
     let editingId = null;
     let editCategory = null;
-    let activeMarkers = [];
+    let markerClicked = false;
     let hiddenCategories = new Set(JSON.parse(localStorage.getItem('austin-recs-hidden') || '[]'));
     let searchQuery = '';
 
@@ -498,21 +507,6 @@
       anchor: 'bottom',
     });
 
-    // ── Pin SVG Factory (uses shared gradient defs — no per-marker <defs>) ──
-    const PIN_PATH = 'M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z';
-
-    function createPinElement(catId, isNeighborhood) {
-      const w = isNeighborhood ? 34 : 28;
-      const h = isNeighborhood ? 48 : 40;
-      const cat = CAT_MAP.get(catId);
-      const el = document.createElement('div');
-      el.className = 'marker-pin' + (isNeighborhood ? ' marker-pin-hood' : '');
-      el.innerHTML = `<svg width="${w}" height="${h}" viewBox="0 0 28 40">` +
-        `<path d="${PIN_PATH}" fill="url(#pin-${catId})" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>` +
-        `<ellipse cx="10.5" cy="10" rx="5" ry="3.5" fill="rgba(255,255,255,0.3)"/></svg>`;
-      el.style.filter = `drop-shadow(0 3px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 8px ${cat.color}40)`;
-      return el;
-    }
 
     // ── 3D Buildings + Terrain (after style loads) ──
     map.on('load', () => {
@@ -571,6 +565,49 @@
         maxzoom: 15,
       });
       map.setTerrain({ source: 'terrain-dem', exaggeration: 1.5 });
+
+      // Register pin images for each category (rendered via Canvas for WebGL)
+      CATEGORIES.forEach(c => {
+        map.addImage('pin-' + c.id, createPinCanvas(c.color), { pixelRatio: 2 });
+      });
+
+      // GeoJSON source + symbol layer — pins render in WebGL pipeline (no DOM desync)
+      map.addSource('markers', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+      map.addLayer({
+        id: 'markers-layer',
+        type: 'symbol',
+        source: 'markers',
+        layout: {
+          'icon-image': ['concat', 'pin-', ['get', 'category']],
+          'icon-anchor': 'bottom',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        }
+      });
+
+      // Marker click → edit modal
+      map.on('click', 'markers-layer', (e) => {
+        markerClicked = true;
+        openEditModal(e.features[0].properties.id);
+      });
+
+      // Marker hover → tooltip popup
+      map.on('mouseenter', 'markers-layer', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        const p = e.features[0].properties;
+        const cat = CAT_MAP.get(p.category) || CATEGORIES[0];
+        let html = `<strong>${p.name}</strong><br><em>${cat.label}</em>`;
+        if (p.address) html += `<br><small>${p.address}</small>`;
+        if (p.notes) html += `<br>${p.notes}`;
+        hoverPopup.setLngLat(e.features[0].geometry.coordinates).setHTML(html).addTo(map);
+      });
+      map.on('mouseleave', 'markers-layer', () => {
+        map.getCanvas().style.cursor = '';
+        hoverPopup.remove();
+      });
 
       // Load data after map is ready
       loadData();
@@ -632,51 +669,35 @@
     buildCategoryButtons('category-grid', id => { selectedCategory = id; });
     buildCategoryButtons('edit-category-grid', id => { editCategory = id; });
 
-    // ── Render Markers (3D pin teardrops) ──
+    // ── Render Markers (WebGL symbol layer — no DOM desync) ──
     let visibleRecs = [];
 
     function renderMarkers() {
-      for (let i = 0; i < activeMarkers.length; i++) activeMarkers[i].remove();
-      activeMarkers = [];
       visibleRecs = [];
       buildLegend();
 
       const q = searchQuery.toLowerCase();
+      const features = [];
 
-      // Pre-filter valid recs once
-      const filtered = recommendations.filter(rec => {
-        if (isNaN(rec.lat) || isNaN(rec.lng)) return false;
-        if (hiddenCategories.has(rec.category)) return false;
+      for (let i = 0; i < recommendations.length; i++) {
+        const rec = recommendations[i];
+        if (isNaN(rec.lat) || isNaN(rec.lng)) continue;
+        if (hiddenCategories.has(rec.category)) continue;
         if (q && !rec.name.toLowerCase().includes(q)
             && !(rec.notes || '').toLowerCase().includes(q)
-            && !(rec.address || '').toLowerCase().includes(q)) return false;
-        return true;
-      });
-
-      for (let i = 0; i < filtered.length; i++) {
-        const rec = filtered[i];
-        const cat = CAT_MAP.get(rec.category) || CATEGORIES[0];
-        const el = createPinElement(rec.category, rec.category === 'neighborhood');
-
-        // Build tooltip lazily on first hover
-        let tooltipHTML = null;
-        el.addEventListener('mouseenter', () => {
-          if (!tooltipHTML) {
-            tooltipHTML = `<strong>${rec.name}</strong><br><em>${cat.label}</em>`;
-            if (rec.address) tooltipHTML += `<br><small>${rec.address}</small>`;
-            if (rec.notes) tooltipHTML += `<br>${rec.notes}`;
-          }
-          hoverPopup.setLngLat([rec.lng, rec.lat]).setHTML(tooltipHTML).addTo(map);
+            && !(rec.address || '').toLowerCase().includes(q)) continue;
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [rec.lng, rec.lat] },
+          properties: { id: rec.id, name: rec.name, category: rec.category,
+            address: rec.address || '', notes: rec.notes || '' }
         });
-        el.addEventListener('mouseleave', () => { hoverPopup.remove(); });
-        el.addEventListener('click', () => { openEditModal(rec.id); });
-
-        activeMarkers.push(
-          new maplibregl.Marker({ element: el, anchor: 'bottom' })
-            .setLngLat([rec.lng, rec.lat])
-            .addTo(map)
-        );
         visibleRecs.push(rec);
+      }
+
+      const source = map.getSource('markers');
+      if (source) {
+        source.setData({ type: 'FeatureCollection', features });
       }
 
       updatePlacesList();
@@ -784,6 +805,7 @@
 
     // ── Map Click → Add ──
     map.on('click', (e) => {
+      if (markerClicked) { markerClicked = false; return; }
       pendingLatLng = { lat: e.lngLat.lat, lng: e.lngLat.lng };
       selectedCategory = null;
       document.getElementById('rec-name').value = '';
