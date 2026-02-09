@@ -322,7 +322,7 @@
       { id: 'daytrip',      label: 'Day Trips',          color: '#06b6d4' },
     ];
 
-    // ── Color Helpers ──
+    // ── Helpers ──
     function hexToRgb(hex) {
       const n = parseInt(hex.replace('#', ''), 16);
       return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
@@ -337,6 +337,27 @@
       const f = 1 - pct / 100;
       return `rgb(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)})`;
     }
+    function debounce(fn, ms) {
+      let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+    }
+
+    // O(1) category lookup + pre-built gradient SVG defs (shared across all markers)
+    const CAT_MAP = new Map(CATEGORIES.map(c => [c.id, c]));
+    const LOCATE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>';
+
+    // Inject a single hidden SVG with shared gradient defs — eliminates per-marker <defs>
+    (() => {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+      svg.setAttribute('aria-hidden', 'true');
+      svg.innerHTML = '<defs>' + CATEGORIES.map(c => {
+        const l = lightenColor(c.color, 55), d = darkenColor(c.color, 40);
+        return `<radialGradient id="pin-${c.id}" cx="38%" cy="28%" r="60%">` +
+          `<stop offset="0%" stop-color="${l}"/><stop offset="50%" stop-color="${c.color}"/>` +
+          `<stop offset="100%" stop-color="${d}"/></radialGradient>`;
+      }).join('') + '</defs>';
+      document.body.appendChild(svg);
+    })();
 
     // ── State ──
     let recommendations = [];
@@ -477,30 +498,19 @@
       anchor: 'bottom',
     });
 
-    // ── Pin SVG Factory ──
-    let pinCounter = 0;
-    function createPinElement(color, isNeighborhood) {
-      const uid = 'pg' + (pinCounter++);
-      const light = lightenColor(color, 55);
-      const dark = darkenColor(color, 40);
+    // ── Pin SVG Factory (uses shared gradient defs — no per-marker <defs>) ──
+    const PIN_PATH = 'M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z';
+
+    function createPinElement(catId, isNeighborhood) {
       const w = isNeighborhood ? 34 : 28;
       const h = isNeighborhood ? 48 : 40;
-
+      const cat = CAT_MAP.get(catId);
       const el = document.createElement('div');
       el.className = 'marker-pin' + (isNeighborhood ? ' marker-pin-hood' : '');
-      el.innerHTML = `<svg width="${w}" height="${h}" viewBox="0 0 28 40" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="${uid}" cx="38%" cy="28%" r="60%">
-            <stop offset="0%" stop-color="${light}"/>
-            <stop offset="50%" stop-color="${color}"/>
-            <stop offset="100%" stop-color="${dark}"/>
-          </radialGradient>
-        </defs>
-        <path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z"
-              fill="url(#${uid})" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
-        <ellipse cx="10.5" cy="10" rx="5" ry="3.5" fill="rgba(255,255,255,0.3)"/>
-      </svg>`;
-      el.style.filter = `drop-shadow(0 3px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 8px ${color}40)`;
+      el.innerHTML = `<svg width="${w}" height="${h}" viewBox="0 0 28 40">` +
+        `<path d="${PIN_PATH}" fill="url(#pin-${catId})" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>` +
+        `<ellipse cx="10.5" cy="10" rx="5" ry="3.5" fill="rgba(255,255,255,0.3)"/></svg>`;
+      el.style.filter = `drop-shadow(0 3px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 8px ${cat.color}40)`;
       return el;
     }
 
@@ -575,9 +585,13 @@
       toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, duration);
     }
 
-    // ── Legend with toggles ──
+    // ── Legend with toggles (skips rebuild if categories unchanged) ──
+    let _lastLegendKey = '';
     function buildLegend() {
       const activeCats = new Set(recommendations.map(r => r.category));
+      const key = [...activeCats].sort().join(',') + '|' + [...hiddenCategories].sort().join(',');
+      if (key === _lastLegendKey) return;
+      _lastLegendKey = key;
       const el = document.getElementById('legend');
       el.innerHTML = '<h3>Filter Categories</h3>' + CATEGORIES.filter(c => activeCats.has(c.id)).map(c => {
         const disabled = hiddenCategories.has(c.id) ? ' disabled' : '';
@@ -619,53 +633,51 @@
     buildCategoryButtons('edit-category-grid', id => { editCategory = id; });
 
     // ── Render Markers (3D pin teardrops) ──
-    let visibleRecs = []; // track what's currently rendered for the sidebar
+    let visibleRecs = [];
 
     function renderMarkers() {
-      // Remove existing markers
-      activeMarkers.forEach(m => m.remove());
+      for (let i = 0; i < activeMarkers.length; i++) activeMarkers[i].remove();
       activeMarkers = [];
       visibleRecs = [];
-      pinCounter = 0;
       buildLegend();
 
       const q = searchQuery.toLowerCase();
-      recommendations.forEach(rec => {
-        if (isNaN(rec.lat) || isNaN(rec.lng)) return;
-        if (hiddenCategories.has(rec.category)) return;
+
+      // Pre-filter valid recs once
+      const filtered = recommendations.filter(rec => {
+        if (isNaN(rec.lat) || isNaN(rec.lng)) return false;
+        if (hiddenCategories.has(rec.category)) return false;
         if (q && !rec.name.toLowerCase().includes(q)
             && !(rec.notes || '').toLowerCase().includes(q)
-            && !(rec.address || '').toLowerCase().includes(q)) return;
+            && !(rec.address || '').toLowerCase().includes(q)) return false;
+        return true;
+      });
 
-        const cat = CATEGORIES.find(c => c.id === rec.category) || CATEGORIES[0];
-        const isNeighborhood = rec.category === 'neighborhood';
+      for (let i = 0; i < filtered.length; i++) {
+        const rec = filtered[i];
+        const cat = CAT_MAP.get(rec.category) || CATEGORIES[0];
+        const el = createPinElement(rec.category, rec.category === 'neighborhood');
 
-        // Create 3D pin marker
-        const el = createPinElement(cat.color, isNeighborhood);
-
-        // Tooltip content
-        let tooltipHTML = `<strong>${rec.name}</strong><br><em>${cat.label}</em>`;
-        if (rec.address) tooltipHTML += `<br><small>${rec.address}</small>`;
-        if (rec.notes) tooltipHTML += `<br>${rec.notes}`;
-
+        // Build tooltip lazily on first hover
+        let tooltipHTML = null;
         el.addEventListener('mouseenter', () => {
+          if (!tooltipHTML) {
+            tooltipHTML = `<strong>${rec.name}</strong><br><em>${cat.label}</em>`;
+            if (rec.address) tooltipHTML += `<br><small>${rec.address}</small>`;
+            if (rec.notes) tooltipHTML += `<br>${rec.notes}`;
+          }
           hoverPopup.setLngLat([rec.lng, rec.lat]).setHTML(tooltipHTML).addTo(map);
         });
-        el.addEventListener('mouseleave', () => {
-          hoverPopup.remove();
-        });
-        el.addEventListener('click', () => {
-          openEditModal(rec.id);
-        });
+        el.addEventListener('mouseleave', () => { hoverPopup.remove(); });
+        el.addEventListener('click', () => { openEditModal(rec.id); });
 
-        // anchor: 'bottom' — pin tip sits exactly on the coordinate
-        const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-          .setLngLat([rec.lng, rec.lat])
-          .addTo(map);
-
-        activeMarkers.push(marker);
+        activeMarkers.push(
+          new maplibregl.Marker({ element: el, anchor: 'bottom' })
+            .setLngLat([rec.lng, rec.lat])
+            .addTo(map)
+        );
         visibleRecs.push(rec);
-      });
+      }
 
       updatePlacesList();
     }
@@ -727,58 +739,48 @@
       btn.classList.toggle('collapsed');
     }
 
-    // Update sidebar when map moves
-    map.on('moveend', updatePlacesList);
+    // Update sidebar when map moves (debounced to avoid thrash during flyTo)
+    map.on('moveend', debounce(updatePlacesList, 150));
 
     // ── My Location ──
     let userLocationMarker = null;
 
     function goToMyLocation() {
       const btn = document.getElementById('locate-btn');
+      const resetBtn = () => { btn.innerHTML = LOCATE_SVG + ' My Location'; btn.disabled = false; };
       btn.textContent = 'Locating...';
       btn.disabled = true;
 
       if (!navigator.geolocation) {
         alert('Geolocation is not supported by your browser.');
-        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> My Location`;
-        btn.disabled = false;
+        resetBtn();
         return;
       }
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
-
-          // Remove old location marker
           if (userLocationMarker) userLocationMarker.remove();
-
-          // Add blue dot for user location
           const dot = document.createElement('div');
           dot.className = 'user-loc-dot';
           userLocationMarker = new maplibregl.Marker({ element: dot, anchor: 'center' })
-            .setLngLat([longitude, latitude])
-            .addTo(map);
-
-          // Fly to location
+            .setLngLat([longitude, latitude]).addTo(map);
           map.flyTo({ center: [longitude, latitude], zoom: 15, duration: 1200 });
-
-          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> My Location`;
-          btn.disabled = false;
+          resetBtn();
         },
-        (err) => {
+        () => {
           alert('Could not get your location. Make sure location access is enabled.');
-          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> My Location`;
-          btn.disabled = false;
+          resetBtn();
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     }
 
-    // ── Search ──
-    document.getElementById('search').addEventListener('input', (e) => {
+    // ── Search (debounced — avoids re-rendering 120+ markers on every keystroke) ──
+    document.getElementById('search').addEventListener('input', debounce((e) => {
       searchQuery = e.target.value.trim();
       renderMarkers();
-    });
+    }, 200));
 
     // ── Map Click → Add ──
     map.on('click', (e) => {
