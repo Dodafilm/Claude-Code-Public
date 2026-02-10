@@ -6,15 +6,14 @@
 <title>3D Boid Simulation</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #888; overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; }
+  body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; touch-action: none; }
   canvas { display: block; touch-action: none; }
   #hud {
     position: fixed; top: 10px; left: 10px;
-    color: rgba(0,0,0,0.6); font-size: 13px; line-height: 1.6;
+    color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.6;
     pointer-events: none; user-select: none;
-    text-shadow: 0 0 4px rgba(255,255,255,0.8);
   }
-  #hud span { color: #06a; }
+  #hud span { color: #0ff; }
   #touch-controls {
     display: none;
     position: fixed; bottom: 16px; left: 0; right: 0;
@@ -24,17 +23,17 @@
   #touch-controls button {
     pointer-events: auto;
     width: 52px; height: 52px; border-radius: 50%;
-    border: 1.5px solid rgba(0,0,0,0.2);
-    background: rgba(255,255,255,0.5);
-    color: #333; font-size: 18px; font-family: inherit;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.08);
+    color: #fff; font-size: 18px; font-family: inherit;
     backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
-  #touch-controls button:active { background: rgba(0,0,0,0.15); }
+  #touch-controls button:active { background: rgba(255,255,255,0.25); }
   #touch-hint {
     display: none;
     position: fixed; bottom: 78px; left: 0; right: 0;
-    text-align: center; color: rgba(0,0,0,0.4); font-size: 11px;
+    text-align: center; color: rgba(255,255,255,0.4); font-size: 11px;
     pointer-events: none; user-select: none;
   }
   #social-slider-wrap {
@@ -43,25 +42,25 @@
     z-index: 10; user-select: none;
   }
   #social-slider-wrap label {
-    color: rgba(0,0,0,0.5); font-size: 11px; font-family: 'Courier New', monospace;
-    white-space: nowrap; text-shadow: 0 0 3px rgba(255,255,255,0.7);
+    color: rgba(255,255,255,0.5); font-size: 11px; font-family: 'Courier New', monospace;
+    white-space: nowrap;
   }
   #social-slider {
     -webkit-appearance: none; appearance: none;
     width: 140px; height: 4px; border-radius: 2px;
-    background: linear-gradient(to right, #e05020, #aaa 40%, #aaa 60%, #2090d0);
+    background: linear-gradient(to right, #f06030, #333 40%, #333 60%, #30c0f0);
     outline: none; cursor: pointer;
   }
   #social-slider::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none;
     width: 14px; height: 14px; border-radius: 50%;
-    background: #fff; border: 1.5px solid rgba(0,0,0,0.25);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    background: #fff; border: 1.5px solid rgba(255,255,255,0.4);
+    box-shadow: 0 0 6px rgba(255,255,255,0.3);
   }
   #social-slider::-moz-range-thumb {
     width: 14px; height: 14px; border-radius: 50%;
-    background: #fff; border: 1.5px solid rgba(0,0,0,0.25);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    background: #fff; border: 1.5px solid rgba(255,255,255,0.4);
+    box-shadow: 0 0 6px rgba(255,255,255,0.3);
   }
 </style>
 </head>
@@ -619,26 +618,27 @@ function drawBoxBack(light3D) {
   const lLen = Math.sqrt(light3D.x ** 2 + light3D.y ** 2 + light3D.z ** 2) || 1;
 
   for (const face of BOX_FACES) {
-    // Outward normal in rotated space — if it points toward camera (rn.z < 0) it's a front face
     const rn = rotateYAxis(face.nx, face.ny, face.nz, rotationY);
     if (rn.z < 0) continue; // skip front faces in this pass
 
-    // Back face — opaque white with lighting
     const lightDot = Math.max(0, (face.nx * light3D.x + face.ny * light3D.y + face.nz * light3D.z) / lLen);
     const shade = Math.floor(175 + lightDot * 65);
     drawFace(face, `rgb(${shade}, ${shade}, ${shade})`);
   }
+}
 
-  // Spotlight vignette (brighter near cursor, darker at edges)
-  ctx.save();
-  ctx.globalCompositeOperation = 'multiply';
-  const spotGrad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, Math.max(W, H) * 0.7);
-  spotGrad.addColorStop(0, 'rgb(255, 255, 255)');
-  spotGrad.addColorStop(0.35, 'rgb(240, 240, 243)');
-  spotGrad.addColorStop(1, 'rgb(160, 160, 175)');
-  ctx.fillStyle = spotGrad;
-  ctx.fillRect(0, 0, W, H);
-  ctx.restore();
+// Clip region = projected back faces (visible box area)
+function clipToBox() {
+  ctx.beginPath();
+  for (const face of BOX_FACES) {
+    const rn = rotateYAxis(face.nx, face.ny, face.nz, rotationY);
+    if (rn.z < 0) continue;
+    const projected = face.pts.map(c => project(c[0], c[1], c[2]));
+    ctx.moveTo(projected[0].sx, projected[0].sy);
+    for (let i = 1; i < projected.length; i++) ctx.lineTo(projected[i].sx, projected[i].sy);
+    ctx.closePath();
+  }
+  ctx.clip();
 }
 
 function drawBoxFront() {
@@ -849,7 +849,7 @@ function loop(now) {
   ctx.fillStyle = '#1a1a20';
   ctx.fillRect(0, 0, W, H);
 
-  // Back walls (opaque white, behind boids) + spotlight vignette
+  // Back walls (opaque white, behind boids)
   drawBoxBack(light3D);
 
   // Depth-sort boids with screen positions
@@ -857,11 +857,28 @@ function loop(now) {
     .map(b => ({ b, ...project(b.x, b.y, b.z) }))
     .sort((a, b) => b.depth - a.depth);
 
+  // Clip spotlight + shadows to box outline
+  ctx.save();
+  clipToBox();
+
+  // Spotlight vignette
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  const spotGrad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, Math.max(W, H) * 0.7);
+  spotGrad.addColorStop(0, 'rgb(255, 255, 255)');
+  spotGrad.addColorStop(0.35, 'rgb(240, 240, 243)');
+  spotGrad.addColorStop(1, 'rgb(160, 160, 175)');
+  ctx.fillStyle = spotGrad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
   // Projected boid shadows on walls
   drawWallShadows(light3D);
 
   // Soft shadow volumes (atmospheric)
   drawShadowVolumes(sorted);
+
+  ctx.restore(); // end box clip
 
   // Boid pass with lighting
   for (const { b } of sorted) drawBoid(b, light3D);
