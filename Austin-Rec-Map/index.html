@@ -159,23 +159,13 @@
     .btn-cancel { background: rgba(255,255,255,0.08); color: var(--text); }
     .btn-delete { background: #FF2AB0; color: #fff; }
 
-    /* MapLibre popup (tooltip style) */
-    .maplibregl-popup-content {
-      background: #08021a; color: var(--text); border: 1px solid var(--border-strong);
-      border-radius: 8px; padding: 8px 14px; font-size: 0.85rem;
-      max-width: 260px; white-space: normal;
-      box-shadow: 0 4px 20px rgba(137,1,254,0.15), 0 4px 16px rgba(0,0,0,0.5);
-      font-family: var(--font-body); font-weight: 400;
-    }
-    .maplibregl-popup-tip {
-      border-top-color: #08021a;
-    }
 
     .toast {
       position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
       background: var(--bg-panel); border: 1px solid var(--border);
       border-radius: 10px; padding: 10px 20px; z-index: 1000;
       font-size: 0.9rem; color: var(--text-mid); pointer-events: none; transition: opacity 0.5s;
+      opacity: 0;
     }
 
     .search-box {
@@ -273,6 +263,30 @@
       box-shadow: 0 0 10px rgba(6,172,255,0.6);
     }
 
+    /* Pin details panel */
+    .details-panel {
+      position: absolute; top: 100px; left: 284px; z-index: 1000;
+      background: var(--bg-panel); border: 1px solid var(--border-strong);
+      border-radius: 10px; padding: 14px 16px; width: 240px;
+      display: none; font-family: var(--font-body); font-weight: 400;
+      box-shadow: 0 4px 20px rgba(137,1,254,0.12);
+    }
+    .details-panel.active { display: block; }
+    .details-name {
+      font-family: var(--font-heading); font-weight: 700;
+      font-size: 0.95rem; letter-spacing: 0.02em; margin-bottom: 4px;
+    }
+    .details-cat {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em;
+      margin-bottom: 6px;
+    }
+    .details-address {
+      font-size: 0.78rem; color: var(--text-mid); margin-bottom: 4px;
+    }
+    .details-notes {
+      font-size: 0.8rem; color: var(--text-mid); line-height: 1.4;
+    }
+
   </style>
 </head>
 <body>
@@ -307,6 +321,14 @@
     <button class="locate-gps" id="locate-gps" onclick="goToMyLocation()" title="Use my GPS location">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
     </button>
+  </div>
+
+  <!-- Pin details panel -->
+  <div class="details-panel" id="details-panel">
+    <div class="details-name" id="details-name"></div>
+    <div class="details-cat" id="details-cat"></div>
+    <div class="details-address" id="details-address"></div>
+    <div class="details-notes" id="details-notes"></div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -516,13 +538,28 @@
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }), 'top-right');
 
-    // Shared popup for tooltip-style hover (offset accounts for pin height)
-    const hoverPopup = new maplibregl.Popup({
-      closeButton: false,
-      closeOnClick: false,
-      offset: [0, -44],
-      anchor: 'bottom',
-    });
+    // Details panel references
+    const detailsPanel = document.getElementById('details-panel');
+    const detailsName = document.getElementById('details-name');
+    const detailsCat = document.getElementById('details-cat');
+    const detailsAddress = document.getElementById('details-address');
+    const detailsNotes = document.getElementById('details-notes');
+
+    function showDetails(p) {
+      const cat = CAT_MAP.get(p.category) || CATEGORIES[0];
+      detailsName.textContent = p.name;
+      detailsCat.textContent = cat.label;
+      detailsCat.style.color = cat.color;
+      detailsAddress.textContent = p.address || '';
+      detailsAddress.style.display = p.address ? '' : 'none';
+      detailsNotes.textContent = p.notes || '';
+      detailsNotes.style.display = p.notes ? '' : 'none';
+      detailsPanel.classList.add('active');
+    }
+
+    function hideDetails() {
+      detailsPanel.classList.remove('active');
+    }
 
 
     // ── 3D Buildings + Terrain + Globe (after style loads) ──
@@ -622,25 +659,20 @@
         }
       });
 
-      // Marker click → edit modal
+      // Marker click → show details panel + fly to
       map.on('click', 'markers-layer', (e) => {
         markerClicked = true;
-        openEditModal(e.features[0].properties.id);
+        showDetails(e.features[0].properties);
       });
 
-      // Marker hover → tooltip popup
+      // Marker hover → cursor change + show details
       map.on('mouseenter', 'markers-layer', (e) => {
         map.getCanvas().style.cursor = 'pointer';
-        const p = e.features[0].properties;
-        const cat = CAT_MAP.get(p.category) || CATEGORIES[0];
-        let html = `<strong>${p.name}</strong><br><em>${cat.label}</em>`;
-        if (p.address) html += `<br><small>${p.address}</small>`;
-        if (p.notes) html += `<br>${p.notes}`;
-        hoverPopup.setLngLat(e.features[0].geometry.coordinates).setHTML(html).addTo(map);
+        showDetails(e.features[0].properties);
       });
       map.on('mouseleave', 'markers-layer', () => {
         map.getCanvas().style.cursor = '';
-        hoverPopup.remove();
+        hideDetails();
       });
 
       // Load data after map is ready
