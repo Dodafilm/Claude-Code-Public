@@ -129,6 +129,7 @@ let mouseDown = false;
 let targetCount = 150;
 let socialForce = 0; // -1 (repel) to +1 (attract)
 let zoom = 1.0;           // 0.3 to 3.0
+let fogTime = 0;
 
 const BOUNDS = 400;        // 3D cube half-size
 const FOV = 600;
@@ -401,6 +402,99 @@ function drawShadows(light3D) {
   // Composite shadow map onto main canvas (multiply darkens white walls)
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
+  ctx.drawImage(fogCanvas, 0, 0, W, H);
+  ctx.restore();
+}
+
+// --- Volumetric fog with god rays ---
+function drawVolumetricFog() {
+  fogCtx.fillStyle = '#000';
+  fogCtx.fillRect(0, 0, fogW, fogH);
+
+  const mx = mouseX * FOG_SCALE;
+  const my = mouseY * FOG_SCALE;
+  const maxR = Math.max(fogW, fogH) * 0.65;
+
+  // Base light volume — radial glow from cursor
+  const baseGrad = fogCtx.createRadialGradient(mx, my, 0, mx, my, maxR);
+  baseGrad.addColorStop(0, 'rgba(70, 60, 90, 0.45)');
+  baseGrad.addColorStop(0.25, 'rgba(45, 38, 65, 0.25)');
+  baseGrad.addColorStop(0.6, 'rgba(20, 18, 35, 0.1)');
+  baseGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  fogCtx.fillStyle = baseGrad;
+  fogCtx.fillRect(0, 0, fogW, fogH);
+
+  // God rays — animated shimmering beams from cursor
+  fogCtx.save();
+  fogCtx.globalCompositeOperation = 'lighter';
+
+  const rayCount = 80;
+  for (let i = 0; i < rayCount; i++) {
+    const baseAngle = (i / rayCount) * Math.PI * 2;
+    const wobble = Math.sin(fogTime * 0.015 + i * 2.3) * 0.04;
+    const angle = baseAngle + wobble;
+    const shimmer = Math.sin(fogTime * 0.025 + i * 1.7) * 0.5 + 0.5;
+    const length = (180 + shimmer * 120) * FOG_SCALE;
+    const width = (1.5 + shimmer * 2.5) * FOG_SCALE;
+    const alpha = shimmer * 0.06;
+
+    const endX = mx + Math.cos(angle) * length;
+    const endY = my + Math.sin(angle) * length;
+
+    const rayGrad = fogCtx.createLinearGradient(mx, my, endX, endY);
+    rayGrad.addColorStop(0, `rgba(90, 80, 120, ${alpha})`);
+    rayGrad.addColorStop(0.4, `rgba(55, 48, 80, ${alpha * 0.6})`);
+    rayGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    fogCtx.strokeStyle = rayGrad;
+    fogCtx.lineWidth = width;
+    fogCtx.beginPath();
+    fogCtx.moveTo(mx, my);
+    fogCtx.lineTo(endX, endY);
+    fogCtx.stroke();
+  }
+
+  // Wider scatter rays for atmospheric depth
+  const scatterCount = 30;
+  for (let i = 0; i < scatterCount; i++) {
+    const angle = (i / scatterCount) * Math.PI * 2 + fogTime * 0.003;
+    const shimmer = Math.sin(fogTime * 0.018 + i * 3.1) * 0.5 + 0.5;
+    const length = (120 + shimmer * 200) * FOG_SCALE;
+    const width = (4 + shimmer * 8) * FOG_SCALE;
+    const alpha = shimmer * 0.025;
+
+    const endX = mx + Math.cos(angle) * length;
+    const endY = my + Math.sin(angle) * length;
+
+    fogCtx.strokeStyle = `rgba(60, 55, 85, ${alpha})`;
+    fogCtx.lineWidth = width;
+    fogCtx.beginPath();
+    fogCtx.moveTo(mx, my);
+    fogCtx.lineTo(endX, endY);
+    fogCtx.stroke();
+  }
+
+  fogCtx.restore();
+
+  // Shadow cutouts — boids block the light volume
+  fogCtx.save();
+  fogCtx.globalCompositeOperation = 'destination-out';
+  for (const b of boids) {
+    const p = project(b.x, b.y, b.z);
+    if (p.scale <= 0) continue;
+    const r = Math.max(3, 6 * p.scale) * FOG_SCALE;
+    const cutAlpha = Math.min(0.6, p.scale * 0.4);
+    fogCtx.fillStyle = `rgba(0, 0, 0, ${cutAlpha})`;
+    fogCtx.beginPath();
+    fogCtx.arc(p.sx * FOG_SCALE, p.sy * FOG_SCALE, r, 0, Math.PI * 2);
+    fogCtx.fill();
+  }
+  fogCtx.restore();
+
+  // Composite onto main canvas — screen brightens darker areas, invisible on white
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.45;
   ctx.drawImage(fogCanvas, 0, 0, W, H);
   ctx.restore();
 }
@@ -832,6 +926,7 @@ function loop(now) {
 
   rotationY += rotationVel;
   rotationVel *= 0.95; // friction
+  fogTime += rawDt;
 
   // FPS counter
   fpsFrames++;
@@ -886,6 +981,9 @@ function loop(now) {
 
   // Boid-shaped shadows projected onto walls
   drawShadows(light3D);
+
+  // Volumetric fog with god rays
+  drawVolumetricFog();
 
   ctx.restore(); // end box clip
 
