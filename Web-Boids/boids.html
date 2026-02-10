@@ -136,8 +136,6 @@ const FOV = 600;
 const MAX_SPEED = 4;
 const VISUAL_RANGE = 80;
 const SEPARATION_DIST = 30;
-const CAM_DIST = 350;      // camera distance from center (inside BOUNDS box)
-const NEAR_PLANE = 20;     // near-plane clip threshold
 
 // --- Boid ---
 function createBoid(x, y, z) {
@@ -162,9 +160,7 @@ function rotateYAxis(x, y, z, angle) {
 
 function project(x, y, z) {
   const r = rotateYAxis(x, y, z, rotationY);
-  const zDist = CAM_DIST + r.z;
-  if (zDist < NEAR_PLANE) return null; // behind camera
-  const perspective = zoom * FOV / zDist;
+  const perspective = zoom * FOV / (FOV + r.z + BOUNDS * 1.5);
   return {
     sx: W / 2 + r.x * perspective,
     sy: H / 2 + r.y * perspective,
@@ -175,7 +171,7 @@ function project(x, y, z) {
 
 // --- Unproject mouse into 3D (on z=0 plane after rotation) ---
 function unprojectMouse(mx, my) {
-  const perspective = FOV / CAM_DIST;
+  const perspective = FOV / (FOV + BOUNDS * 1.5);
   const wx = (mx - W / 2) / perspective;
   const wy = (my - H / 2) / perspective;
   const c = Math.cos(-rotationY), s = Math.sin(-rotationY);
@@ -299,8 +295,53 @@ function hslToRgb(h, s, l) {
   return [f(0) * 255, f(8) * 255, f(4) * 255];
 }
 
-// --- Shadow volumes (for white box interior) ---
-function drawShadows(sorted) {
+// --- Projected wall shadows (boid shadows cast onto wall surfaces) ---
+function drawWallShadows(light3D) {
+  const B = BOUNDS;
+  const walls = [
+    { axis: 0, val: B },  { axis: 0, val: -B },
+    { axis: 1, val: B },  { axis: 1, val: -B },
+    { axis: 2, val: B },  { axis: 2, val: -B },
+  ];
+  const getAxis = (b, a) => a === 0 ? b.x : a === 1 ? b.y : b.z;
+  const getLAxis = (l, a) => a === 0 ? l.x : a === 1 ? l.y : l.z;
+
+  for (const wall of walls) {
+    for (const b of boids) {
+      const bVal = getAxis(b, wall.axis);
+      const lVal = getLAxis(light3D, wall.axis);
+      const denom = bVal - lVal;
+      if (Math.abs(denom) < 0.1) continue;
+
+      const t = (wall.val - lVal) / denom;
+      if (t < 1 || t > 20) continue; // shadow must be beyond boid, cap range
+
+      const sx = light3D.x + t * (b.x - light3D.x);
+      const sy = light3D.y + t * (b.y - light3D.y);
+      const sz = light3D.z + t * (b.z - light3D.z);
+
+      if (Math.abs(sx) > B + 5 || Math.abs(sy) > B + 5 || Math.abs(sz) > B + 5) continue;
+
+      const p = project(sx, sy, sz);
+      const shadowDist = t - 1; // how far shadow is from boid (0 = contact)
+      const shadowSize = Math.max(3, 8 * p.scale * (1 + shadowDist * 0.8));
+      const shadowAlpha = Math.min(0.55, 0.6 / (1 + shadowDist * 1.5));
+
+      // Draw soft shadow blob
+      const grad = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, shadowSize);
+      grad.addColorStop(0, `rgba(0, 0, 0, ${shadowAlpha})`);
+      grad.addColorStop(0.6, `rgba(0, 0, 0, ${shadowAlpha * 0.4})`);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(p.sx, p.sy, shadowSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+// --- Soft shadow volumes (atmospheric darkening on walls) ---
+function drawShadowVolumes(sorted) {
   fogCtx.fillStyle = '#fff';
   fogCtx.fillRect(0, 0, fogW, fogH);
 
@@ -335,7 +376,7 @@ function drawShadows(sorted) {
     const f2x = bx + nx * shadowLen - px * boidWidth * spread;
     const f2y = by + ny * shadowLen - py * boidWidth * spread;
 
-    const shadowAlpha = Math.min(0.35, Math.max(0.05, scale * 0.3));
+    const shadowAlpha = Math.min(0.5, Math.max(0.08, scale * 0.45));
 
     fogCtx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
     fogCtx.beginPath();
@@ -387,7 +428,7 @@ function drawCursorOrb() {
 
 function drawBoid(b, light3D) {
   const p = project(b.x, b.y, b.z);
-  if (!p || p.scale <= 0) return;
+  if (p.scale <= 0) return;
 
   const size = Math.max(2.5, 7 * p.scale);
 
@@ -548,85 +589,66 @@ function drawBoid(b, light3D) {
   }
 }
 
-// --- White box interior (with near-plane clipping) ---
-function clipAndProjectFace(worldCorners) {
-  // Sutherland-Hodgman clip against near plane in rotated space
-  const clipZ = -CAM_DIST + NEAR_PLANE;
-  const rotated = worldCorners.map(c => rotateYAxis(c[0], c[1], c[2], rotationY));
-  const clipped = [];
+// --- White box with semi-transparent front faces ---
+const BOX_FACES = (() => {
+  const B = BOUNDS;
+  return [
+    { pts: [[B,-B,-B],[B,B,-B],[B,B,B],[B,-B,B]], nx:1,ny:0,nz:0 },      // +x
+    { pts: [[-B,-B,B],[-B,B,B],[-B,B,-B],[-B,-B,-B]], nx:-1,ny:0,nz:0 },  // -x
+    { pts: [[-B,B,-B],[-B,B,B],[B,B,B],[B,B,-B]], nx:0,ny:1,nz:0 },       // +y
+    { pts: [[-B,-B,B],[-B,-B,-B],[B,-B,-B],[B,-B,B]], nx:0,ny:-1,nz:0 },   // -y
+    { pts: [[-B,-B,B],[B,-B,B],[B,B,B],[-B,B,B]], nx:0,ny:0,nz:1 },       // +z (far)
+    { pts: [[B,-B,-B],[-B,-B,-B],[-B,B,-B],[B,B,-B]], nx:0,ny:0,nz:-1 },  // -z (near)
+  ];
+})();
 
-  for (let i = 0; i < rotated.length; i++) {
-    const curr = rotated[i];
-    const next = rotated[(i + 1) % rotated.length];
-    const cIn = curr.z >= clipZ;
-    const nIn = next.z >= clipZ;
-
-    if (cIn) {
-      const p = zoom * FOV / (CAM_DIST + curr.z);
-      clipped.push({ sx: W / 2 + curr.x * p, sy: H / 2 + curr.y * p });
-      if (!nIn) {
-        const t = (clipZ - curr.z) / (next.z - curr.z);
-        const ix = curr.x + t * (next.x - curr.x);
-        const iy = curr.y + t * (next.y - curr.y);
-        const p2 = zoom * FOV / NEAR_PLANE;
-        clipped.push({ sx: W / 2 + ix * p2, sy: H / 2 + iy * p2 });
-      }
-    } else if (nIn) {
-      const t = (clipZ - curr.z) / (next.z - curr.z);
-      const ix = curr.x + t * (next.x - curr.x);
-      const iy = curr.y + t * (next.y - curr.y);
-      const p2 = zoom * FOV / NEAR_PLANE;
-      clipped.push({ sx: W / 2 + ix * p2, sy: H / 2 + iy * p2 });
-    }
-  }
-  return clipped.length >= 3 ? clipped : null;
+function drawFace(face, style) {
+  const projected = face.pts.map(c => project(c[0], c[1], c[2]));
+  ctx.fillStyle = style;
+  ctx.beginPath();
+  ctx.moveTo(projected[0].sx, projected[0].sy);
+  for (let i = 1; i < projected.length; i++) ctx.lineTo(projected[i].sx, projected[i].sy);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
 }
 
-function drawBox(light3D) {
-  const B = BOUNDS;
-  const faces = [
-    { pts: [[B,-B,-B],[B,B,-B],[B,B,B],[B,-B,B]], nx:-1,ny:0,nz:0 },     // +x wall
-    { pts: [[-B,-B,B],[-B,B,B],[-B,B,-B],[-B,-B,-B]], nx:1,ny:0,nz:0 },  // -x wall
-    { pts: [[-B,B,-B],[-B,B,B],[B,B,B],[B,B,-B]], nx:0,ny:-1,nz:0 },     // +y (floor)
-    { pts: [[-B,-B,B],[-B,-B,-B],[B,-B,-B],[B,-B,B]], nx:0,ny:1,nz:0 },  // -y (ceiling)
-    { pts: [[-B,-B,B],[B,-B,B],[B,B,B],[-B,B,B]], nx:0,ny:0,nz:-1 },     // +z (far)
-    { pts: [[B,-B,-B],[-B,-B,-B],[-B,B,-B],[B,B,-B]], nx:0,ny:0,nz:1 },  // -z (near)
-  ];
-
-  // Light direction for wall shading
+function drawBoxBack(light3D) {
   const lLen = Math.sqrt(light3D.x ** 2 + light3D.y ** 2 + light3D.z ** 2) || 1;
 
-  for (const face of faces) {
-    const clipped = clipAndProjectFace(face.pts);
-    if (!clipped) continue;
+  for (const face of BOX_FACES) {
+    // Outward normal in rotated space — if it points toward camera (rn.z < 0) it's a front face
+    const rn = rotateYAxis(face.nx, face.ny, face.nz, rotationY);
+    if (rn.z < 0) continue; // skip front faces in this pass
 
-    // Face brightness: how much this face faces the light
+    // Back face — opaque white with lighting
     const lightDot = Math.max(0, (face.nx * light3D.x + face.ny * light3D.y + face.nz * light3D.z) / lLen);
-    const shade = Math.floor(155 + lightDot * 85); // 155–240 range
-
-    ctx.fillStyle = `rgb(${shade}, ${shade}, ${shade})`;
-    ctx.beginPath();
-    ctx.moveTo(clipped[0].sx, clipped[0].sy);
-    for (let i = 1; i < clipped.length; i++) ctx.lineTo(clipped[i].sx, clipped[i].sy);
-    ctx.closePath();
-    ctx.fill();
-
-    // Subtle edge lines for definition
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    const shade = Math.floor(175 + lightDot * 65);
+    drawFace(face, `rgb(${shade}, ${shade}, ${shade})`);
   }
 
-  // Spotlight gradient from cursor (multiply darkens walls away from light)
+  // Spotlight vignette (brighter near cursor, darker at edges)
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
-  const spotGrad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, Math.max(W, H) * 0.8);
+  const spotGrad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, Math.max(W, H) * 0.7);
   spotGrad.addColorStop(0, 'rgb(255, 255, 255)');
-  spotGrad.addColorStop(0.4, 'rgb(230, 230, 235)');
-  spotGrad.addColorStop(1, 'rgb(140, 140, 155)');
+  spotGrad.addColorStop(0.35, 'rgb(240, 240, 243)');
+  spotGrad.addColorStop(1, 'rgb(160, 160, 175)');
   ctx.fillStyle = spotGrad;
   ctx.fillRect(0, 0, W, H);
   ctx.restore();
+}
+
+function drawBoxFront() {
+  for (const face of BOX_FACES) {
+    const rn = rotateYAxis(face.nx, face.ny, face.nz, rotationY);
+    if (rn.z >= 0) continue; // skip back faces in this pass
+
+    // Front face — semi-transparent so boids show through
+    drawFace(face, 'rgba(255, 255, 255, 0.12)');
+  }
 }
 
 // --- Manage boid count ---
@@ -824,23 +846,28 @@ function loop(now) {
 
   // Render — full clear
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#808088';
+  ctx.fillStyle = '#1a1a20';
   ctx.fillRect(0, 0, W, H);
 
-  // White box interior walls + spotlight
-  drawBox(light3D);
+  // Back walls (opaque white, behind boids) + spotlight vignette
+  drawBoxBack(light3D);
 
-  // Depth-sort boids (filter out boids behind camera)
+  // Depth-sort boids with screen positions
   const sorted = boids
-    .map(b => { const p = project(b.x, b.y, b.z); return p ? { b, ...p } : null; })
-    .filter(p => p !== null)
+    .map(b => ({ b, ...project(b.x, b.y, b.z) }))
     .sort((a, b) => b.depth - a.depth);
 
-  // Shadow volumes on walls
-  drawShadows(sorted);
+  // Projected boid shadows on walls
+  drawWallShadows(light3D);
+
+  // Soft shadow volumes (atmospheric)
+  drawShadowVolumes(sorted);
 
   // Boid pass with lighting
   for (const { b } of sorted) drawBoid(b, light3D);
+
+  // Front walls (semi-transparent, over boids)
+  drawBoxFront();
 
   // Cursor light orb (drawn on top)
   drawCursorOrb();
