@@ -6,11 +6,22 @@
   <title>Psychojelly Recommendation Map</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
   <style>
-    /* Typography system */
+    /* Design system: light blue → deep purple */
     :root {
       --font-brand: 'Futura', 'Futura Std', 'Century Gothic', 'Avenir', sans-serif;
       --font-heading: 'Good Headline Pro Cond', 'Good Headline Pro Condensed', 'Barlow Condensed', 'Arial Narrow', sans-serif;
       --font-body: 'Futura PT', 'Futura', 'Century Gothic', 'Avenir', sans-serif;
+      --bg: #000000;
+      --bg-panel: rgba(8, 2, 24, 0.92);
+      --bg-header: #06021a;
+      --border: rgba(137, 1, 254, 0.18);
+      --border-strong: rgba(137, 1, 254, 0.35);
+      --accent: #8901FE;
+      --accent-light: #7AFCFE;
+      --accent-blue: #06ACFF;
+      --text: #ffffff;
+      --text-mid: rgba(255, 255, 255, 0.6);
+      --text-dim: rgba(255, 255, 255, 0.3);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -21,8 +32,8 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
-      background: #1a1a2e;
-      color: #eee;
+      background: var(--bg);
+      color: var(--text);
     }
 
     header {
@@ -30,8 +41,8 @@
       align-items: center;
       justify-content: space-between;
       padding: 10px 20px;
-      background: #16213e;
-      border-bottom: 2px solid #0f3460;
+      background: linear-gradient(135deg, var(--bg-header), #0d0030);
+      border-bottom: 2px solid var(--border-strong);
       z-index: 1000;
       flex-wrap: wrap;
       gap: 8px;
@@ -40,36 +51,40 @@
     header h1 { font-size: 1.3rem; font-weight: 400; letter-spacing: 1px; font-family: var(--font-body); }
     header .brand {
       font-family: var(--font-brand); font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em; color: #e94560;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      background: linear-gradient(135deg, #7AFCFE, #06ACFF, #8901FE);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    header .subtitle { font-family: var(--font-body); font-weight: 400; color: #ccc; }
+    header .subtitle { font-family: var(--font-body); font-weight: 400; color: var(--text-mid); }
 
     .btn {
       padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer;
       font-size: 0.85rem; font-weight: 600; transition: opacity 0.2s;
     }
     .btn:hover { opacity: 0.85; }
-    .btn-primary { background: #0f3460; color: #eee; }
-    .btn-danger  { background: #e94560; color: #fff; }
+    .btn-primary { background: rgba(137,1,254,0.3); color: var(--text); }
+    .btn-danger  { background: var(--accent); color: #fff; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     #map { flex: 1; z-index: 1; }
 
     /* Filter section (inside sidebar) */
     .legend-section {
-      padding: 10px 14px; border-bottom: 1px solid #0f3460; flex-shrink: 0;
+      padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
     }
     .legend-section-header {
       display: flex; align-items: center; justify-content: space-between;
       cursor: pointer; user-select: none;
     }
     .legend-section-header h3 {
-      font-size: 0.75rem; margin: 0; color: #aaa;
+      font-size: 0.75rem; margin: 0; color: var(--text-mid);
       font-family: var(--font-heading); font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.03em;
     }
     .legend-section-toggle {
-      background: none; border: none; color: #aaa; cursor: pointer;
+      background: none; border: none; color: var(--text-mid); cursor: pointer;
       font-size: 0.75rem; padding: 0 2px; transition: transform 0.2s;
     }
     .legend-section-toggle.collapsed { transform: rotate(180deg); }
@@ -82,25 +97,25 @@
       padding: 3px 8px; border-radius: 6px; font-size: 0.72rem;
       font-family: var(--font-body); font-weight: 400;
       cursor: pointer; user-select: none; transition: opacity 0.2s;
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.04);
     }
-    .legend-item:hover { background: rgba(255,255,255,0.1); }
+    .legend-item:hover { background: rgba(137,1,254,0.15); }
     .legend-item.disabled { opacity: 0.35; }
     .legend-dot {
       width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-      border: 1.5px solid rgba(255,255,255,0.3);
+      border: 1.5px solid rgba(255,255,255,0.25);
     }
 
     /* Modal */
     .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
       z-index: 2000; justify-content: center; align-items: center;
     }
     .modal-overlay.active { display: flex; }
 
     .modal {
-      background: #16213e; border-radius: 14px; padding: 28px;
-      width: 380px; max-width: 90vw; border: 1px solid #0f3460;
+      background: #08021a; border-radius: 14px; padding: 28px;
+      width: 380px; max-width: 90vw; border: 1px solid var(--border-strong);
       max-height: 90vh; overflow-y: auto;
     }
     .modal h2 {
@@ -110,19 +125,19 @@
     }
 
     .modal label {
-      display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 4px;
+      display: block; font-size: 0.8rem; color: var(--text-mid); margin-bottom: 4px;
       font-family: var(--font-heading); font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.03em;
     }
     .modal input, .modal textarea {
       width: 100%; padding: 10px 12px; border-radius: 8px;
-      border: 1px solid #0f3460; background: #1a1a2e; color: #eee;
+      border: 1px solid var(--border); background: rgba(0,0,0,0.5); color: var(--text);
       font-size: 0.95rem; margin-bottom: 14px; font-family: inherit;
     }
     .modal textarea { resize: vertical; min-height: 60px; }
 
     .modal .hint {
-      font-size: 0.72rem; color: #666; margin-top: -10px; margin-bottom: 14px;
+      font-size: 0.72rem; color: var(--text-dim); margin-top: -10px; margin-bottom: 14px;
     }
 
     .category-grid {
@@ -140,60 +155,58 @@
     .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
     .modal-actions .btn { flex: 1; padding: 10px; font-size: 0.95rem; }
 
-    .btn-save { background: #e94560; color: #fff; }
-    .btn-cancel { background: #0f3460; color: #eee; }
-    .btn-delete { background: #6b2131; color: #fff; }
+    .btn-save { background: var(--accent); color: #fff; }
+    .btn-cancel { background: rgba(255,255,255,0.08); color: var(--text); }
+    .btn-delete { background: #FF2AB0; color: #fff; }
 
     /* MapLibre popup (tooltip style) */
     .maplibregl-popup-content {
-      background: #16213e; color: #eee; border: 1px solid #0f3460;
+      background: #08021a; color: var(--text); border: 1px solid var(--border-strong);
       border-radius: 8px; padding: 8px 14px; font-size: 0.85rem;
       max-width: 260px; white-space: normal;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 20px rgba(137,1,254,0.15), 0 4px 16px rgba(0,0,0,0.5);
       font-family: var(--font-body); font-weight: 400;
     }
     .maplibregl-popup-tip {
-      border-top-color: #16213e;
+      border-top-color: #08021a;
     }
 
     .toast {
       position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
-      background: rgba(22, 33, 62, 0.95); border: 1px solid #0f3460;
+      background: var(--bg-panel); border: 1px solid var(--border);
       border-radius: 10px; padding: 10px 20px; z-index: 1000;
-      font-size: 0.9rem; color: #ccc; pointer-events: none; transition: opacity 0.5s;
+      font-size: 0.9rem; color: var(--text-mid); pointer-events: none; transition: opacity 0.5s;
     }
-
-
 
     .search-box {
       position: absolute; top: 62px; right: 54px; z-index: 1000;
     }
     .search-box input {
-      padding: 8px 14px; border-radius: 8px; border: 1px solid #0f3460;
-      background: rgba(22,33,62,0.95); color: #eee; font-size: 0.9rem;
+      padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-panel); color: var(--text); font-size: 0.9rem;
       width: 220px; font-family: inherit;
     }
-    .search-box input::placeholder { color: #666; }
+    .search-box input::placeholder { color: var(--text-dim); }
 
     /* Sidebar Panel */
     .sidebar-panel {
       position: absolute; top: 62px; left: 12px; z-index: 1000;
-      background: rgba(22, 33, 62, 0.95); border-radius: 10px;
-      border: 1px solid #0f3460; width: 260px;
+      background: var(--bg-panel); border-radius: 10px;
+      border: 1px solid var(--border); width: 260px;
       max-height: calc(100vh - 80px); display: flex; flex-direction: column;
     }
     .places-header {
-      padding: 10px 14px 8px; border-bottom: 1px solid #0f3460;
+      padding: 10px 14px 8px; border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
       flex-shrink: 0;
     }
     .places-header h3 {
-      font-size: 0.75rem; color: #aaa; text-transform: uppercase;
+      font-size: 0.75rem; color: var(--accent-light); text-transform: uppercase;
       font-family: var(--font-heading); font-weight: 700;
       letter-spacing: 0.03em; margin: 0;
     }
     .places-toggle {
-      background: none; border: none; color: #aaa; cursor: pointer;
+      background: none; border: none; color: var(--text-mid); cursor: pointer;
       font-size: 1rem; padding: 0 4px; transition: transform 0.2s;
     }
     .places-toggle.collapsed { transform: rotate(180deg); }
@@ -209,9 +222,9 @@
       display: flex; align-items: center; gap: 6px;
       cursor: pointer; user-select: none;
     }
-    .places-cat-header:hover { background: rgba(255,255,255,0.04); }
+    .places-cat-header:hover { background: rgba(137,1,254,0.08); }
     .places-cat-chevron {
-      margin-left: auto; font-size: 0.6rem; transition: transform 0.2s; color: #666;
+      margin-left: auto; font-size: 0.6rem; transition: transform 0.2s; color: var(--text-dim);
     }
     .places-cat-chevron.collapsed { transform: rotate(-90deg); }
     .places-cat-dot {
@@ -225,39 +238,39 @@
       transition: background 0.15s; white-space: nowrap;
       overflow: hidden; text-overflow: ellipsis;
     }
-    .places-item:hover { background: rgba(255,255,255,0.07); }
+    .places-item:hover { background: rgba(137,1,254,0.1); }
     .places-item-notes {
-      font-size: 0.68rem; color: #888; overflow: hidden;
+      font-size: 0.68rem; color: var(--text-dim); overflow: hidden;
       text-overflow: ellipsis; white-space: nowrap;
     }
     .places-empty {
-      padding: 12px 14px; font-size: 0.8rem; color: #666; text-align: center;
+      padding: 12px 14px; font-size: 0.8rem; color: var(--text-dim); text-align: center;
     }
 
     /* Location bar (address search + GPS) */
     .locate-bar {
       position: absolute; top: 62px; left: 284px; z-index: 1000;
       display: flex; align-items: center; gap: 0;
-      background: rgba(22, 33, 62, 0.95); border: 1px solid #0f3460;
+      background: var(--bg-panel); border: 1px solid var(--border);
       border-radius: 8px; overflow: hidden;
     }
     .locate-bar input {
-      padding: 8px 12px; border: none; background: transparent; color: #eee;
+      padding: 8px 12px; border: none; background: transparent; color: var(--text);
       font-size: 0.82rem; font-family: inherit; width: 200px; outline: none;
     }
-    .locate-bar input::placeholder { color: #666; }
+    .locate-bar input::placeholder { color: var(--text-dim); }
     .locate-gps {
-      background: none; border: none; border-left: 1px solid #0f3460;
-      color: #aaa; cursor: pointer; padding: 7px 10px;
+      background: none; border: none; border-left: 1px solid var(--border);
+      color: var(--text-mid); cursor: pointer; padding: 7px 10px;
       display: flex; align-items: center; transition: color 0.2s, background 0.2s;
     }
-    .locate-gps:hover { color: #60a5fa; background: rgba(255,255,255,0.05); }
+    .locate-gps:hover { color: var(--accent-light); background: rgba(137,1,254,0.1); }
     .locate-gps svg { flex-shrink: 0; }
     .user-loc-dot {
       width: 14px; height: 14px; border-radius: 50%;
-      background: radial-gradient(circle at 40% 35%, #60a5fa, #2563eb);
+      background: radial-gradient(circle at 40% 35%, #7AFCFE, #06ACFF);
       border: 2.5px solid #fff;
-      box-shadow: 0 0 10px rgba(37,99,235,0.6);
+      box-shadow: 0 0 10px rgba(6,172,255,0.6);
     }
 
   </style>
@@ -324,18 +337,18 @@
   <script>
     // ── Categories ──
     const CATEGORIES = [
-      { id: 'neighborhood', label: 'Neighborhoods',      color: '#94a3b8' },
-      { id: 'coffee',       label: 'Coffee',             color: '#d97706' },
-      { id: 'food',         label: 'Food',               color: '#e94560' },
-      { id: 'drinks',       label: 'Bars & Nightlife',   color: '#f5a623' },
-      { id: 'music',        label: 'Live Music',         color: '#a855f7' },
-      { id: 'festival',     label: 'Festivals & Events', color: '#fbbf24' },
-      { id: 'arts',         label: 'Arts & Culture',     color: '#f472b6' },
-      { id: 'shopping',     label: 'Shopping & Records', color: '#ec4899' },
-      { id: 'outdoors',     label: 'Outdoors & Nature',  color: '#4ecdc4' },
-      { id: 'entertainment',label: 'Entertainment',      color: '#3b82f6' },
-      { id: 'fitness',      label: 'Health & Wellness',  color: '#22c55e' },
-      { id: 'daytrip',      label: 'Day Trips',          color: '#06b6d4' },
+      { id: 'neighborhood', label: 'Neighborhoods',      color: '#7AFCFE' },
+      { id: 'coffee',       label: 'Coffee',             color: '#FFC300' },
+      { id: 'food',         label: 'Food',               color: '#FF7E0B' },
+      { id: 'drinks',       label: 'Bars & Nightlife',   color: '#FF2AB0' },
+      { id: 'music',        label: 'Live Music',         color: '#8901FE' },
+      { id: 'festival',     label: 'Festivals & Events', color: '#171FFF' },
+      { id: 'arts',         label: 'Arts & Culture',     color: '#06ACFF' },
+      { id: 'shopping',     label: 'Shopping & Records', color: '#7AFCFE' },
+      { id: 'outdoors',     label: 'Outdoors & Nature',  color: '#0000FF' },
+      { id: 'entertainment',label: 'Entertainment',      color: '#171FFF' },
+      { id: 'fitness',      label: 'Health & Wellness',  color: '#06ACFF' },
+      { id: 'daytrip',      label: 'Day Trips',          color: '#FFC300' },
     ];
 
     // ── Helpers ──
@@ -552,9 +565,9 @@
           paint: {
             'fill-extrusion-color': [
               'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 8],
-              0, '#1e1e3a',
-              30, '#262650',
-              80, '#2e2e60'
+              0, '#0a0020',
+              30, '#120035',
+              80, '#1a0050'
             ],
             'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8],
             'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
@@ -580,10 +593,10 @@
         source: 'terrain-dem',
         paint: {
           'hillshade-exaggeration': 0.6,
-          'hillshade-shadow-color': '#000020',
-          'hillshade-highlight-color': '#ffffff',
+          'hillshade-shadow-color': '#000010',
+          'hillshade-highlight-color': '#7AFCFE',
           'hillshade-illumination-direction': 315,
-          'hillshade-accent-color': '#1a1a3e',
+          'hillshade-accent-color': '#0a0030',
         }
       }, '3d-buildings');
 
@@ -836,13 +849,13 @@
           id: 'walk-radius-fill',
           type: 'fill',
           source: 'walk-radius',
-          paint: { 'fill-color': '#2563eb', 'fill-opacity': 0.08 }
+          paint: { 'fill-color': '#8901FE', 'fill-opacity': 0.08 }
         }, 'markers-layer');
         map.addLayer({
           id: 'walk-radius-line',
           type: 'line',
           source: 'walk-radius',
-          paint: { 'line-color': '#60a5fa', 'line-width': 2, 'line-opacity': 0.5, 'line-dasharray': [3, 2] }
+          paint: { 'line-color': '#7AFCFE', 'line-width': 2, 'line-opacity': 0.5, 'line-dasharray': [3, 2] }
         }, 'markers-layer');
       }
 
