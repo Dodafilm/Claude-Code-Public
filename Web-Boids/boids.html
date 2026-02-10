@@ -294,99 +294,111 @@ function hslToRgb(h, s, l) {
   return [f(0) * 255, f(8) * 255, f(4) * 255];
 }
 
-// --- Projected wall shadows (boid shadows cast onto wall surfaces) ---
-function drawWallShadows(light3D) {
-  const B = BOUNDS;
-  const walls = [
-    { axis: 0, val: B },  { axis: 0, val: -B },
-    { axis: 1, val: B },  { axis: 1, val: -B },
-    { axis: 2, val: B },  { axis: 2, val: -B },
-  ];
-  const getAxis = (b, a) => a === 0 ? b.x : a === 1 ? b.y : b.z;
-  const getLAxis = (l, a) => a === 0 ? l.x : a === 1 ? l.y : l.z;
-
-  for (const wall of walls) {
-    for (const b of boids) {
-      const bVal = getAxis(b, wall.axis);
-      const lVal = getLAxis(light3D, wall.axis);
-      const denom = bVal - lVal;
-      if (Math.abs(denom) < 0.1) continue;
-
-      const t = (wall.val - lVal) / denom;
-      if (t < 1 || t > 20) continue; // shadow must be beyond boid, cap range
-
-      const sx = light3D.x + t * (b.x - light3D.x);
-      const sy = light3D.y + t * (b.y - light3D.y);
-      const sz = light3D.z + t * (b.z - light3D.z);
-
-      if (Math.abs(sx) > B + 5 || Math.abs(sy) > B + 5 || Math.abs(sz) > B + 5) continue;
-
-      const p = project(sx, sy, sz);
-      const shadowDist = t - 1; // how far shadow is from boid (0 = contact)
-      const shadowSize = Math.max(3, 8 * p.scale * (1 + shadowDist * 0.8));
-      const shadowAlpha = Math.min(0.55, 0.6 / (1 + shadowDist * 1.5));
-
-      // Draw soft shadow blob
-      const grad = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, shadowSize);
-      grad.addColorStop(0, `rgba(0, 0, 0, ${shadowAlpha})`);
-      grad.addColorStop(0.6, `rgba(0, 0, 0, ${shadowAlpha * 0.4})`);
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(p.sx, p.sy, shadowSize, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-// --- Soft shadow volumes (atmospheric darkening on walls) ---
-function drawShadowVolumes(sorted) {
+// --- Boid-shaped shadow projection onto visible walls ---
+function drawShadows(light3D) {
   fogCtx.fillStyle = '#fff';
   fogCtx.fillRect(0, 0, fogW, fogH);
 
-  const fmx = mouseX * FOG_SCALE;
-  const fmy = mouseY * FOG_SCALE;
-  const maxR = Math.max(fogW, fogH) * 0.95;
+  const B = BOUNDS;
+  const SZ = 10; // boid world-space size
+  const LA = [light3D.x, light3D.y, light3D.z];
 
-  for (const { b, sx, sy, scale } of sorted) {
-    const bx = sx * FOG_SCALE;
-    const by = sy * FOG_SCALE;
-    const dx = bx - fmx;
-    const dy = by - fmy;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 3) continue;
-
-    const nx = dx / dist;
-    const ny = dy / dist;
-    const px = -ny;
-    const py = nx;
-
-    const boidWidth = Math.max(2.5, 7 * scale) * FOG_SCALE;
-    const shadowLen = maxR * 1.2;
-    const spread = 2.5;
-
-    const n1x = bx + px * boidWidth;
-    const n1y = by + py * boidWidth;
-    const n2x = bx - px * boidWidth;
-    const n2y = by - py * boidWidth;
-
-    const f1x = bx + nx * shadowLen + px * boidWidth * spread;
-    const f1y = by + ny * shadowLen + py * boidWidth * spread;
-    const f2x = bx + nx * shadowLen - px * boidWidth * spread;
-    const f2y = by + ny * shadowLen - py * boidWidth * spread;
-
-    const shadowAlpha = Math.min(0.5, Math.max(0.08, scale * 0.45));
-
-    fogCtx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
-    fogCtx.beginPath();
-    fogCtx.moveTo(n1x, n1y);
-    fogCtx.lineTo(f1x, f1y);
-    fogCtx.lineTo(f2x, f2y);
-    fogCtx.lineTo(n2x, n2y);
-    fogCtx.closePath();
-    fogCtx.fill();
+  // Collect visible back walls (axis + plane value)
+  const walls = [];
+  for (const face of BOX_FACES) {
+    const rn = rotateYAxis(face.nx, face.ny, face.nz, rotationY);
+    if (rn.z < 0) continue;
+    const axis = face.nx !== 0 ? 0 : face.ny !== 0 ? 1 : 2;
+    walls.push({ axis, val: face.pts[0][axis] });
   }
 
+  for (const b of boids) {
+    // Build boid triangle in 3D
+    const spd = Math.sqrt(b.vx * b.vx + b.vy * b.vy + b.vz * b.vz) || 1;
+    const fx = b.vx / spd, fy = b.vy / spd, fz = b.vz / spd;
+    // Wing = cross(forward, (0,-1,0)) = (fz, 0, -fx)
+    const wl = Math.sqrt(fz * fz + fx * fx) || 1;
+    const wx = fz / wl, wz = -fx / wl;
+
+    const verts = [
+      [b.x + fx * SZ * 2.5, b.y + fy * SZ * 2.5, b.z + fz * SZ * 2.5],       // tip
+      [b.x - fx * SZ + wx * SZ * 1.3, b.y - fy * SZ, b.z - fz * SZ + wz * SZ * 1.3], // left
+      [b.x - fx * SZ - wx * SZ * 1.3, b.y - fy * SZ, b.z - fz * SZ - wz * SZ * 1.3], // right
+    ];
+
+    for (const wall of walls) {
+      // Project each boid vertex from light onto wall plane
+      const pts = [];
+      let totalT = 0, valid = true;
+
+      for (const v of verts) {
+        const denom = v[wall.axis] - LA[wall.axis];
+        if (Math.abs(denom) < 0.01) { valid = false; break; }
+        const t = (wall.val - LA[wall.axis]) / denom;
+        if (t < 1 || t > 25) { valid = false; break; }
+        totalT += t;
+
+        const hx = LA[0] + t * (v[0] - LA[0]);
+        const hy = LA[1] + t * (v[1] - LA[1]);
+        const hz = LA[2] + t * (v[2] - LA[2]);
+        if (Math.abs(hx) > B * 1.05 || Math.abs(hy) > B * 1.05 || Math.abs(hz) > B * 1.05) {
+          valid = false; break;
+        }
+
+        const p = project(hx, hy, hz);
+        pts.push({ sx: p.sx * FOG_SCALE, sy: p.sy * FOG_SCALE });
+      }
+
+      if (!valid || pts.length < 3) continue;
+
+      const avgT = totalT / 3;
+      const dist = Math.max(0, avgT - 1); // 0 = contact, higher = further
+
+      // Intensity: strong near wall, fades with distance
+      const umbra = Math.min(0.7, 0.8 / (1 + dist * 0.35));
+      // Penumbra spread: sharp at contact, soft further away
+      const penSpread = 1 + Math.min(2.0, dist * 0.5);
+
+      // Centroid for scaling penumbra outward
+      const cx = (pts[0].sx + pts[1].sx + pts[2].sx) / 3;
+      const cy = (pts[0].sy + pts[1].sy + pts[2].sy) / 3;
+
+      // --- 3 layers: outer penumbra, inner penumbra, umbra core ---
+
+      // Outer penumbra (wide, faint)
+      fogCtx.fillStyle = `rgba(25, 15, 45, ${umbra * 0.2})`;
+      fogCtx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const x = cx + (pts[i].sx - cx) * penSpread * 1.8;
+        const y = cy + (pts[i].sy - cy) * penSpread * 1.8;
+        i === 0 ? fogCtx.moveTo(x, y) : fogCtx.lineTo(x, y);
+      }
+      fogCtx.closePath();
+      fogCtx.fill();
+
+      // Inner penumbra
+      fogCtx.fillStyle = `rgba(25, 15, 45, ${umbra * 0.45})`;
+      fogCtx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const x = cx + (pts[i].sx - cx) * penSpread * 1.2;
+        const y = cy + (pts[i].sy - cy) * penSpread * 1.2;
+        i === 0 ? fogCtx.moveTo(x, y) : fogCtx.lineTo(x, y);
+      }
+      fogCtx.closePath();
+      fogCtx.fill();
+
+      // Umbra core (sharp, dark)
+      fogCtx.fillStyle = `rgba(25, 15, 45, ${umbra})`;
+      fogCtx.beginPath();
+      fogCtx.moveTo(pts[0].sx, pts[0].sy);
+      fogCtx.lineTo(pts[1].sx, pts[1].sy);
+      fogCtx.lineTo(pts[2].sx, pts[2].sy);
+      fogCtx.closePath();
+      fogCtx.fill();
+    }
+  }
+
+  // Composite shadow map onto main canvas (multiply darkens white walls)
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
   ctx.drawImage(fogCanvas, 0, 0, W, H);
@@ -872,11 +884,8 @@ function loop(now) {
   ctx.fillRect(0, 0, W, H);
   ctx.restore();
 
-  // Projected boid shadows on walls
-  drawWallShadows(light3D);
-
-  // Soft shadow volumes (atmospheric)
-  drawShadowVolumes(sorted);
+  // Boid-shaped shadows projected onto walls
+  drawShadows(light3D);
 
   ctx.restore(); // end box clip
 
