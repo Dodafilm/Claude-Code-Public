@@ -26,7 +26,21 @@
       "WebFetch(domain:joe.coffee)",
       "WebFetch(domain:double-trouble-1.wheree.com)",
       "WebFetch(domain:www.tripadvisor.com)",
-      "WebFetch(domain:hh.takeouttracker.com)"
+      "WebFetch(domain:hh.takeouttracker.com)",
+      "WebFetch(domain:maps.apple.com)",
+      "WebFetch(domain:www.artislandatx.com)",
+      "WebFetch(domain:maps.roadtrippers.com)",
+      "WebFetch(domain:jewboysliders.com)",
+      "WebFetch(domain:exploded-drawing.com)",
+      "WebFetch(domain:www.highlandcollectiveatx.com)",
+      "WebFetch(domain:www.findlatitudeandlongitude.com)",
+      "WebFetch(domain:mama-dearest.goto-where.com)",
+      "WebFetch(domain:rockstar-bagels.wa-cafe.com)",
+      "WebFetch(domain:mama-dearest-2.wheree.com)",
+      "WebFetch(domain:www.corner.inc)",
+      "WebFetch(domain:www.restaurantji.com)",
+      "WebFetch(domain:clustrmaps.com)",
+      "WebFetch(domain:www.loopnet.com)"
     ]
   }
 }
