@@ -20,7 +20,13 @@
       "Bash(python3:*)",
       "Bash(node:*)",
       "Bash(git commit:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:www.austintexas.org)",
+      "WebFetch(domain:app.foursquare.com)",
+      "WebFetch(domain:joe.coffee)",
+      "WebFetch(domain:double-trouble-1.wheree.com)",
+      "WebFetch(domain:www.tripadvisor.com)",
+      "WebFetch(domain:hh.takeouttracker.com)"
     ]
   }
 }
