@@ -286,12 +286,74 @@
     .details-notes {
       font-size: 0.8rem; color: var(--text-mid); line-height: 1.4;
     }
+    .details-date {
+      font-size: 0.75rem; color: #FF4500; margin-bottom: 4px;
+      font-family: var(--font-heading); font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    /* Mode toggle */
+    .mode-toggle {
+      display: flex; border-radius: 8px; overflow: hidden;
+      border: 1px solid var(--border-strong);
+    }
+    .mode-btn {
+      padding: 5px 14px; border: none; cursor: pointer;
+      font-size: 0.78rem; font-weight: 600; font-family: var(--font-body);
+      background: rgba(255,255,255,0.05); color: var(--text-mid);
+      transition: background 0.2s, color 0.2s;
+      border-right: 1px solid var(--border);
+    }
+    .mode-btn:last-child { border-right: none; }
+    .mode-btn:hover { background: rgba(137,1,254,0.15); }
+    .mode-btn.active {
+      background: var(--accent); color: #fff;
+    }
+
+    /* SXSW day filter */
+    .day-filter-section {
+      padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .day-filter-section.hidden { display: none; }
+    .day-filter-header {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none;
+    }
+    .day-filter-header h3 {
+      font-size: 0.75rem; margin: 0; color: #FF4500;
+      font-family: var(--font-heading); font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .day-filter-grid {
+      display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+    }
+    .day-filter-grid.collapsed { display: none; }
+    .day-btn {
+      padding: 3px 8px; border-radius: 6px; font-size: 0.72rem;
+      font-family: var(--font-body); font-weight: 600;
+      cursor: pointer; user-select: none; transition: opacity 0.2s, background 0.2s;
+      background: rgba(255,69,0,0.25); color: #FF4500;
+      border: 1px solid rgba(255,69,0,0.3);
+    }
+    .day-btn:hover { background: rgba(255,69,0,0.35); }
+    .day-btn.active {
+      background: #FF4500; color: #fff; border-color: #FF4500;
+    }
+    .day-btn.disabled {
+      opacity: 0.35; background: rgba(255,255,255,0.04);
+      color: var(--text-dim); border-color: transparent;
+    }
 
   </style>
 </head>
 <body>
   <header>
     <h1><span class="brand">Psychojelly</span> <span class="subtitle">Austin Rec Map</span></h1>
+    <div class="mode-toggle">
+      <button class="mode-btn active" onclick="setMode('normal')" data-mode="normal">Normal</button>
+      <button class="mode-btn" onclick="setMode('sxsw')" data-mode="sxsw">SXSW</button>
+      <button class="mode-btn" onclick="setMode('both')" data-mode="both">Both</button>
+    </div>
   </header>
 
   <div id="map"></div>
@@ -304,6 +366,13 @@
       <button class="places-toggle" id="places-toggle" onclick="togglePlacesPanel()" title="Collapse">&#9650;</button>
     </div>
     <div class="sidebar-content" id="sidebar-content">
+      <div class="day-filter-section hidden" id="day-filter-section">
+        <div class="day-filter-header" onclick="toggleDayFilterSection()">
+          <h3>SXSW Days</h3>
+          <button class="legend-section-toggle" id="day-filter-toggle">&#9650;</button>
+        </div>
+        <div class="day-filter-grid" id="day-filter-grid"></div>
+      </div>
       <div class="legend-section">
         <div class="legend-section-header" onclick="toggleFilterSection()">
           <h3>Filter Categories</h3>
@@ -327,6 +396,7 @@
   <div class="details-panel" id="details-panel">
     <div class="details-name" id="details-name"></div>
     <div class="details-cat" id="details-cat"></div>
+    <div class="details-date" id="details-date"></div>
     <div class="details-address" id="details-address"></div>
     <div class="details-notes" id="details-notes"></div>
   </div>
@@ -371,6 +441,7 @@
       { id: 'entertainment',label: 'Entertainment',      color: '#171FFF' },
       { id: 'fitness',      label: 'Health & Wellness',  color: '#06ACFF' },
       { id: 'daytrip',      label: 'Day Trips',          color: '#FFC300' },
+      { id: 'sxsw',         label: 'SXSW',               color: '#FF4500' },
     ];
 
     // ── Helpers ──
@@ -440,6 +511,11 @@
 
     // ── State ──
     let recommendations = [];
+    let sxswEvents = [];
+    let currentMode = 'normal';
+    const SXSW_DATES = ['2025-03-11','2025-03-12','2025-03-13','2025-03-14',
+                         '2025-03-15','2025-03-16','2025-03-17','2025-03-18'];
+    let activeDays = new Set();
     let editingId = null;
     let editCategory = null;
     let markerClicked = false;
@@ -501,6 +577,7 @@
         address: (row.address || '').trim(),
         lat: parseFloat(row.lat),
         lng: parseFloat(row.lng),
+        date: (row.date || '').trim(),
         notes: (row.notes || '').trim(),
       })).filter(r => r.name && ((!isNaN(r.lat) && !isNaN(r.lng)) || r.address));
     }
@@ -512,13 +589,24 @@
         if (!resp.ok) throw new Error('No CSV found');
         const text = await resp.text();
         recommendations = parseCSVText(text);
-        renderMarkers();
-        await geocodeMissing(recommendations);
       } catch (e) {
         console.warn('Could not load data.csv:', e);
         recommendations = [];
-        renderMarkers();
       }
+
+      try {
+        const resp = await fetch('sxsw.csv?t=' + Date.now());
+        if (!resp.ok) throw new Error('No SXSW CSV found');
+        const text = await resp.text();
+        sxswEvents = parseCSVText(text);
+      } catch (e) {
+        console.warn('Could not load sxsw.csv:', e);
+        sxswEvents = [];
+      }
+
+      renderMarkers();
+      await geocodeMissing(recommendations);
+      if (sxswEvents.length > 0) await geocodeMissing(sxswEvents);
     }
 
     // ── Map (MapLibre GL with 3D) ──
@@ -542,14 +630,27 @@
     const detailsPanel = document.getElementById('details-panel');
     const detailsName = document.getElementById('details-name');
     const detailsCat = document.getElementById('details-cat');
+    const detailsDate = document.getElementById('details-date');
     const detailsAddress = document.getElementById('details-address');
     const detailsNotes = document.getElementById('details-notes');
+
+    function formatSxswDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
 
     function showDetails(p) {
       const cat = CAT_MAP.get(p.category) || CATEGORIES[0];
       detailsName.textContent = p.name;
       detailsCat.textContent = cat.label;
       detailsCat.style.color = cat.color;
+      if (p.date) {
+        detailsDate.textContent = formatSxswDate(p.date);
+        detailsDate.style.display = '';
+      } else {
+        detailsDate.style.display = 'none';
+      }
       detailsAddress.textContent = p.address || '';
       detailsAddress.style.display = p.address ? '' : 'none';
       detailsNotes.textContent = p.notes || '';
@@ -691,8 +792,12 @@
     // ── Legend with toggles (skips rebuild if categories unchanged) ──
     let _lastLegendKey = '';
     function buildLegend() {
-      const activeCats = new Set(recommendations.map(r => r.category));
-      const key = [...activeCats].sort().join(',') + '|' + [...hiddenCategories].sort().join(',');
+      let allItems = [];
+      if (currentMode === 'normal') allItems = recommendations;
+      else if (currentMode === 'sxsw') allItems = sxswEvents;
+      else allItems = recommendations.concat(sxswEvents);
+      const activeCats = new Set(allItems.map(r => r.category));
+      const key = currentMode + '|' + [...activeCats].sort().join(',') + '|' + [...hiddenCategories].sort().join(',');
       if (key === _lastLegendKey) return;
       _lastLegendKey = key;
       const el = document.getElementById('legend');
@@ -751,8 +856,19 @@
       const q = searchQuery.toLowerCase();
       const features = [];
 
-      for (let i = 0; i < recommendations.length; i++) {
-        const rec = recommendations[i];
+      // Build combined list based on current mode
+      let items = [];
+      if (currentMode === 'normal') {
+        items = recommendations;
+      } else if (currentMode === 'sxsw') {
+        items = sxswEvents.filter(e => activeDays.has(e.date));
+      } else {
+        // 'both'
+        items = recommendations.concat(sxswEvents.filter(e => activeDays.has(e.date)));
+      }
+
+      for (let i = 0; i < items.length; i++) {
+        const rec = items[i];
         if (isNaN(rec.lat) || isNaN(rec.lng)) continue;
         if (hiddenCategories.has(rec.category)) continue;
         if (q && !rec.name.toLowerCase().includes(q)
@@ -762,7 +878,8 @@
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [rec.lng, rec.lat] },
           properties: { id: rec.id, name: rec.name, category: rec.category,
-            address: rec.address || '', notes: rec.notes || '' }
+            address: rec.address || '', notes: rec.notes || '',
+            date: rec.date || '' }
         });
         visibleRecs.push(rec);
       }
@@ -812,8 +929,9 @@
         </div>`;
         html += `<div class="places-cat-items${collapsed ? ' collapsed' : ''}">`;
         recs.sort((a, b) => a.name.localeCompare(b.name)).forEach(rec => {
+          const dateLabel = rec.date ? ` <span style="color:#FF4500;font-size:0.68rem">${formatSxswDate(rec.date)}</span>` : '';
           html += `<div class="places-item" onclick="flyToPlace('${rec.id}')" title="${rec.notes || ''}">
-            ${rec.name}
+            ${rec.name}${dateLabel}
             ${rec.notes ? `<div class="places-item-notes">${rec.notes}</div>` : ''}
           </div>`;
         });
@@ -824,7 +942,7 @@
     }
 
     function flyToPlace(id) {
-      const rec = recommendations.find(r => r.id === id);
+      const rec = recommendations.find(r => r.id === id) || sxswEvents.find(r => r.id === id);
       if (!rec) return;
       map.flyTo({ center: [rec.lng, rec.lat], zoom: 16, duration: 800 });
     }
@@ -998,6 +1116,51 @@
       if (!confirm('Delete this recommendation?')) return;
       recommendations = recommendations.filter(r => r.id !== editingId);
       renderMarkers(); closeModal('edit-modal');
+    }
+
+    // ── Mode Toggle ──
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+      const daySection = document.getElementById('day-filter-section');
+      if (mode === 'normal') {
+        daySection.classList.add('hidden');
+      } else {
+        daySection.classList.remove('hidden');
+        if (activeDays.size === 0) {
+          SXSW_DATES.forEach(d => activeDays.add(d));
+        }
+        buildDayFilter();
+      }
+      _lastLegendKey = ''; // force legend rebuild
+      renderMarkers();
+    }
+
+    // ── Day Filter ──
+    function buildDayFilter() {
+      const grid = document.getElementById('day-filter-grid');
+      grid.innerHTML = SXSW_DATES.map(date => {
+        const d = new Date(date + 'T12:00:00');
+        const label = `${d.getMonth() + 1}/${d.getDate()}`;
+        const cls = activeDays.has(date) ? 'active' : 'disabled';
+        return `<div class="day-btn ${cls}" onclick="toggleDay('${date}')">${label}</div>`;
+      }).join('');
+    }
+
+    function toggleDay(date) {
+      if (activeDays.has(date)) activeDays.delete(date);
+      else activeDays.add(date);
+      buildDayFilter();
+      renderMarkers();
+    }
+
+    function toggleDayFilterSection() {
+      const grid = document.getElementById('day-filter-grid');
+      const btn = document.getElementById('day-filter-toggle');
+      grid.classList.toggle('collapsed');
+      btn.classList.toggle('collapsed');
     }
 
     // ── Keyboard ──

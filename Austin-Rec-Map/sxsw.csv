@@ -1,0 +1,17 @@
+id,name,category,address,lat,lng,date,notes
+sx1,Flatstock Poster Convention,sxsw,"Palmer Events Center, 900 Barton Springs Rd, Austin, TX 78704",30.2610,-97.7505,2025-03-11,Concert poster art show
+sx2,Japan Nite,sxsw,"Elysium, 705 Red River St, Austin, TX 78701",30.2676,-97.7365,2025-03-11,Japanese indie bands showcase
+sx3,British Music Embassy,sxsw,"Latitude 30, 512 San Jacinto Blvd, Austin, TX 78701",30.2667,-97.7400,2025-03-12,UK artist showcase
+sx4,Hype Hotel,sxsw,"720 Brazos St, Austin, TX 78701",30.2678,-97.7417,2025-03-12,Day parties + showcases
+sx5,Rachael Ray's Feedback,sxsw,"Stubb's BBQ, 801 Red River St, Austin, TX 78701",30.2687,-97.7362,2025-03-13,Free day party + BBQ
+sx6,Fader Fort,sxsw,"1501 E 6th St, Austin, TX 78702",30.2634,-97.7272,2025-03-13,Invite-only day parties
+sx7,NPR Music Showcase,sxsw,"Stubb's BBQ, 801 Red River St, Austin, TX 78701",30.2687,-97.7362,2025-03-14,Tiny Desk Live
+sx8,Waterloo Records Day Party,sxsw,"Waterloo Records, 600 N Lamar Blvd, Austin, TX 78703",30.2717,-97.7540,2025-03-14,Free in-store performances
+sx9,Hotel Vegas Takeover,sxsw,"Hotel Vegas, 1502 E 6th St, Austin, TX 78702",30.2634,-97.7272,2025-03-15,All-day showcases east side
+sx10,Mohawk Day Party,sxsw,"Mohawk, 912 Red River St, Austin, TX 78701",30.2700,-97.7361,2025-03-15,Outdoor stage day shows
+sx11,Cheer Up Charlie's Showcase,sxsw,"Cheer Up Charlie's, 900 Red River St, Austin, TX 78701",30.2697,-97.7364,2025-03-16,Free outdoor showcase
+sx12,Continental Club SXSW,sxsw,"Continental Club, 1315 S Congress Ave, Austin, TX 78704",30.2505,-97.7490,2025-03-16,Special SXSW sets
+sx13,Yard Dog Gallery Party,sxsw,"1510 S Congress Ave, Austin, TX 78704",30.2487,-97.7496,2025-03-17,Art + live music
+sx14,Radio Day Stage,sxsw,"Radio Coffee & Beer, 4204 Menchaca Rd, Austin, TX 78704",30.2315,-97.7878,2025-03-17,South Austin day party
+sx15,SXSW Closing Party,sxsw,"Mohawk, 912 Red River St, Austin, TX 78701",30.2700,-97.7361,2025-03-18,Festival closing showcase
+sx16,Last Chance Showcase,sxsw,"Parish, 501 Brushy St, Austin, TX 78702",30.2648,-97.7340,2025-03-18,Final night performances
